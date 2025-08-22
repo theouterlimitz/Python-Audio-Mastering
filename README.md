@@ -2,8 +2,7 @@
 
 A user-friendly desktop application for mastering your audio files. Built with Python, this tool provides a complete mastering chain—including multi-band compression, equalization, stereo widening, and LUFS loudness normalization—all wrapped in an intuitive graphical user interface with a modern dark theme.
 
-![Screenshot of the Mastering GUI](placeholder.png)
-*(To add a screenshot, replace `placeholder.png` with the name of your image file after uploading it to your repository.)*
+![Screenshot of the Mastering GUI](screenshot_github.png)
 
 ---
 
