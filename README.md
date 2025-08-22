@@ -1,6 +1,6 @@
 # Python Audio Mastering GUI
 
-A user-friendly desktop application for mastering your audio files. Built with Python, this tool provides a complete mastering chain—including multi-band compression, equalization, stereo widening, and LUFS loudness normalization—all wrapped in an intuitive graphical user interface with a modern dark theme.
+A user-friendly desktop application for mastering your audio files. Built with Python, this tool provides a complete mastering chain—including a harmonic exciter, detailed multiband compression, equalization, stereo widening, and LUFS loudness normalization—all wrapped in an intuitive graphical user interface.
 
 ![Screenshot of the Mastering GUI](screenshot_github.png)
 
@@ -10,7 +10,8 @@ A user-friendly desktop application for mastering your audio files. Built with P
 
 -   **Intuitive Graphical Interface:** No command line needed. Easily load files, adjust parameters with sliders, and process your audio with the click of a button.
 -   **Professional Mastering Chain:**
-    -   **3-Band Multiband Compressor:** Tame dynamics with surgical precision by compressing low, mid, and high frequencies independently.
+    -   **Harmonic Exciter:** Add analog warmth, character, and sparkle to your mix with a dedicated saturation control.
+    -   **Detailed Multiband Compressor:** Tame dynamics with surgical precision using independent threshold and ratio controls for the low, mid, and high frequency bands.
     -   **Stereo Widener:** Widen your mix for a more immersive, professional soundstage.
     -   **4-Band EQ:** Shape your sound with controls for Bass, Mids, Presence, and Treble.
     -   **Genre Presets:** Instantly apply EQ curves tailored for Techno, Pop, Dubstep, and Rock.
@@ -81,5 +82,6 @@ The workflow is simple and is broken into sections in the app.
 
 1.  **Select Files:** Use the buttons to select your input audio file and choose a location and name for the output file.
 2.  **Apply a Preset (Optional):** Choose a genre from the dropdown menu to instantly load a set of EQ parameters.
-3.  **Adjust Parameters:** Use the sliders to fine-tune the EQ, stereo width, and final target loudness (LUFS). Check the "Use Multiband Compressor" box to engage the advanced compressor.
-4.  **Start Processing:** Click the "Start Processing" button. The status bar at the bottom will show the progress, and a message will appear when the process is complete.
+3.  **Adjust Parameters:** Use the sliders to fine-tune the Saturation, EQ, stereo width, and final target loudness (LUFS).
+4.  **Use Multiband Compressor:** Check this box to reveal and engage the advanced compressor. Adjust the threshold and ratio for each band as needed.
+5.  **Start Processing:** Click the "Start Processing" button. The status bar at the bottom will show the progress, and a message will appear when the process is complete.
