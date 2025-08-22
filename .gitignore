@@ -1,0 +1,30 @@
+# Python build artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+build/
+dist/
+*.egg-info/
+develop-eggs/
+
+# Virtual Environments
+venv/
+env/
+.venv/
+.env/
+
+# IDE configuration files
+.vscode/
+.idea/
+
+# --- IMPORTANT FOR THIS PROJECT ---
+# Ignore audio files to keep the repository small
+*.wav
+*.mp3
+*.flac
+*.aiff
+
+# Operating System files
+.DS_Store
+Thumbs.db
