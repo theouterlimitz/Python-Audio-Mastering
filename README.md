@@ -1,56 +1,86 @@
-# Python Audio Mastering Tool
+# Python Audio Mastering GUI
 
-A robust, command-line Python script to apply a full mastering chain to your audio files. This tool allows you to process large DJ mixes or other audio tracks efficiently, enhancing their sound with professional-grade equalization, compression, and LUFS loudness normalization.
+A user-friendly desktop application for mastering your audio files. Built with Python, this tool provides a complete mastering chain—including multi-band compression, equalization, stereo widening, and LUFS loudness normalization—all wrapped in an intuitive graphical user interface with a modern dark theme.
+
+![Screenshot of the Mastering GUI](placeholder.png)
+*(To add a screenshot, replace `placeholder.png` with the name of your image file after uploading it to your repository.)*
+
+---
 
 ## Features
 
--   **Robust Chunk-Based Processing:** Handles audio files of any size without running out of memory by processing them in manageable 30-second chunks.
--   **LUFS Loudness Normalization:** Target professional, streaming-ready loudness levels (e.g., -14 LUFS for Spotify) for consistent volume and punch without digital clipping.
--   **Multi-band Equalization:** Manually adjust bass, mids, presence, and treble frequencies to shape your sound.
--   **Genre Presets:** Instantly apply EQ curves tailored for genres like Techno, Pop, Dubstep, and Rock.
--   **Dynamic Range Compression:** Glue your mix together, control dynamics, and increase perceived loudness.
--   **Safe Final Limiting:** A soft limiter at the end of the chain catches any stray peaks, guaranteeing a clean, artifact-free master.
+-   **Intuitive Graphical Interface:** No command line needed. Easily load files, adjust parameters with sliders, and process your audio with the click of a button.
+-   **Professional Mastering Chain:**
+    -   **3-Band Multiband Compressor:** Tame dynamics with surgical precision by compressing low, mid, and high frequencies independently.
+    -   **Stereo Widener:** Widen your mix for a more immersive, professional soundstage.
+    -   **4-Band EQ:** Shape your sound with controls for Bass, Mids, Presence, and Treble.
+    -   **Genre Presets:** Instantly apply EQ curves tailored for Techno, Pop, Dubstep, and Rock.
+-   **LUFS Loudness Normalization:** Target professional, streaming-ready loudness levels (e.g., -14 LUFS for Spotify) for consistent volume without digital clipping.
+-   **Robust & Efficient:** Handles audio files of any size without running out of memory by processing them in manageable chunks with a progress bar.
 
-## Requirements
+---
 
-Before running the script, you need to have Python 3 and the following dependencies installed.
+## Installation & Setup
 
-1.  **Python Libraries:** Install them all with one command using pip:
-    ```bash
-    pip install pydub scipy numpy pyloudnorm tqdm
-    ```
+This application requires a specific Python environment to ensure all libraries work correctly. Please follow these steps.
 
-2.  **FFmpeg:** `pydub` requires FFmpeg for handling different audio formats like MP3 and WAV.
-    -   **On Debian/Ubuntu:**
-        ```bash
-        sudo apt update && sudo apt install ffmpeg
-        ```
-    -   **On macOS (using Homebrew):**
-        ```bash
-        brew install ffmpeg
-        ```
+### 1. Create a Conda Environment
 
-## Usage
-
-The script is run from the command line with the input file and output file as the first two arguments, followed by optional flags for the effects you want to apply.
-
-### Basic Syntax
+This project requires **Python 3.11**. The best way to manage this is with Conda.
 
 ```bash
-python audio_mastering_tool.py <input_file> <output_file> [options]
+# Create a new environment named "audio_env" with Python 3.11
+conda create -n audio_env python=3.11
+```
 
-Examples
-1. Master for Streaming (Spotify, Apple Music, etc.):
-This is the most common use case. It applies the "pop" preset for vocal clarity, adds compression, and targets -14 LUFS.
+### 2. Activate the Environment
 
-python audio_mastering_tool.py "song.wav" "song_mastered_streaming.wav" --preset pop --compress --lufs -14
+You must activate this environment every time you want to run the application.
 
-2. Create a Loud Club Master:
-This example uses the "techno" preset for a powerful low-end, adds compression, and targets a louder -10 LUFS for club playback.
+```bash
+conda activate audio_env
+```
+*(Your terminal prompt will change to show `(audio_env)`)*
 
-python audio_mastering_tool.py "dj_mix.wav" "dj_mix_club_master.wav" --preset techno --compress --lufs -10
+### 3. Install Required Libraries
 
-3. Manually Boost Bass without a Preset:
-If you just want to add some warmth and loudness without a full genre EQ, you can use the flags individually.
+Once the environment is active, install all necessary Python packages with this single command:
 
-python audio_mastering_tool.py "track.mp3" "track_mastered.mp3" --bass_boost 2.5 --compress --lufs -13
+```bash
+pip install pydub scipy numpy pyloudnorm tqdm ttkthemes
+```
+
+### 4. Install FFmpeg
+
+The audio engine requires FFmpeg for handling different audio formats.
+-   **On Debian/Ubuntu:**
+    ```bash
+    sudo apt update && sudo apt install ffmpeg
+    ```
+-   **On macOS (using Homebrew):**
+    ```bash
+    brew install ffmpeg
+    ```
+
+---
+
+## How to Run
+
+After completing the setup, you can launch the application.
+
+1.  Open your terminal.
+2.  Navigate to the project directory: `cd /path/to/Python-Audio-Mastering`
+3.  Activate the Conda environment: `conda activate audio_env`
+4.  Run the GUI script:
+    ```bash
+    python mastering_gui.py
+    ```
+
+## How to Use the GUI
+
+The workflow is simple and is broken into sections in the app.
+
+1.  **Select Files:** Use the buttons to select your input audio file and choose a location and name for the output file.
+2.  **Apply a Preset (Optional):** Choose a genre from the dropdown menu to instantly load a set of EQ parameters.
+3.  **Adjust Parameters:** Use the sliders to fine-tune the EQ, stereo width, and final target loudness (LUFS). Check the "Use Multiband Compressor" box to engage the advanced compressor.
+4.  **Start Processing:** Click the "Start Processing" button. The status bar at the bottom will show the progress, and a message will appear when the process is complete.
