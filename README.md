@@ -1,25 +1,26 @@
 # Python Audio Mastering Tool
 
-A command-line Python script to apply basic mastering effects to audio files. This tool allows you to process your DJ mixes or other audio tracks to enhance their sound with equalization, compression, and normalization, right from the terminal.
+A robust, command-line Python script to apply a full mastering chain to your audio files. This tool allows you to process large DJ mixes or other audio tracks efficiently, enhancing their sound with professional-grade equalization, compression, and LUFS loudness normalization.
 
 ## Features
 
--   **Multi-band Equalization:** Adjust bass, mids, presence, and treble frequencies.
+-   **Robust Chunk-Based Processing:** Handles audio files of any size without running out of memory by processing them in manageable 30-second chunks.
+-   **LUFS Loudness Normalization:** Target professional, streaming-ready loudness levels (e.g., -14 LUFS for Spotify) for consistent volume and punch without digital clipping.
+-   **Multi-band Equalization:** Manually adjust bass, mids, presence, and treble frequencies to shape your sound.
 -   **Genre Presets:** Instantly apply EQ curves tailored for genres like Techno, Pop, Dubstep, and Rock.
--   **Dynamic Range Compression:** Glue your mix together and increase perceived loudness.
--   **Normalization:** Bring your track up to a standard commercial loudness without clipping.
--   **Safe Processing:** Uses 32-bit float processing and a soft limiter to prevent digital clipping and artifacts.
+-   **Dynamic Range Compression:** Glue your mix together, control dynamics, and increase perceived loudness.
+-   **Safe Final Limiting:** A soft limiter at the end of the chain catches any stray peaks, guaranteeing a clean, artifact-free master.
 
 ## Requirements
 
 Before running the script, you need to have Python 3 and the following dependencies installed.
 
-1.  **Python Libraries:** Install them using pip:
+1.  **Python Libraries:** Install them all with one command using pip:
     ```bash
-    pip install pydub scipy numpy
+    pip install pydub scipy numpy pyloudnorm tqdm
     ```
 
-2.  **FFmpeg:** `pydub` requires FFmpeg for handling different audio formats like MP3 and WAV. You can install it on your system using your package manager.
+2.  **FFmpeg:** `pydub` requires FFmpeg for handling different audio formats like MP3 and WAV.
     -   **On Debian/Ubuntu:**
         ```bash
         sudo apt update && sudo apt install ffmpeg
@@ -39,17 +40,17 @@ The script is run from the command line with the input file and output file as t
 python audio_mastering_tool.py <input_file> <output_file> [options]
 
 Examples
-1. Using a Genre Preset:
-To apply the "techno" preset, which boosts bass/treble and scoops the mids, and then normalize the final output:
+1. Master for Streaming (Spotify, Apple Music, etc.):
+This is the most common use case. It applies the "pop" preset for vocal clarity, adds compression, and targets -14 LUFS.
 
-python audio_mastering_tool.py "my_mix.wav" "my_mix_techno.wav" --preset techno --normalize --compress
+python audio_mastering_tool.py "song.wav" "song_mastered_streaming.wav" --preset pop --compress --lufs -14
 
-2. Manually Boosting Vocals:
-To make the vocals brighter and clearer, you can use the --presence_boost flag. This example applies a 3.5dB boost to the vocal presence range and normalizes the track.
+2. Create a Loud Club Master:
+This example uses the "techno" preset for a powerful low-end, adds compression, and targets a louder -10 LUFS for club playback.
 
-python audio_mastering_tool.py "song.wav" "song_vocals_up.wav" --presence_boost 3.5 --normalize
+python audio_mastering_tool.py "dj_mix.wav" "dj_mix_club_master.wav" --preset techno --compress --lufs -10
 
-3. Applying a Gentle Bass Boost and Compression:
-A simple mastering chain to add some low-end warmth and glue the track together.
+3. Manually Boost Bass without a Preset:
+If you just want to add some warmth and loudness without a full genre EQ, you can use the flags individually.
 
-python audio_mastering_tool.py "track.mp3" "track_mastered.mp3" --bass_boost 2.0 --compress --normalize
+python audio_mastering_tool.py "track.mp3" "track_mastered.mp3" --bass_boost 2.5 --compress --lufs -13
