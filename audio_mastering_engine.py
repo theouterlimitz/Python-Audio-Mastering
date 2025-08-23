@@ -1,6 +1,7 @@
-# audio_mastering_engine.py (v10)
+# audio_mastering_engine.py (v10.1)
 #
-# This version adds a batch processing function to handle entire folders of audio files.
+# This version adds robust try...except error handling to the main processing
+# functions to prevent silent failures and GUI hangs.
 #
 
 import os
@@ -22,83 +23,94 @@ EQ_PRESETS = {
 
 # --- BATCH PROCESSING LOGIC ---
 def batch_process_audio(settings, input_folder, output_folder, status_callback=None):
-    """Processes all audio files in a given folder."""
-    if not os.path.isdir(input_folder) or not os.path.isdir(output_folder):
-        if status_callback: status_callback("Error: Please select valid input and output folders.")
-        return
+    """Processes all audio files in a given folder with error handling."""
+    try:
+        if not os.path.isdir(input_folder) or not os.path.isdir(output_folder):
+            if status_callback: status_callback("Error: Please select valid input and output folders.")
+            return
 
-    audio_files = [f for f in os.listdir(input_folder) if f.lower().endswith(('.wav', '.mp3', '.flac', '.aiff'))]
-    
-    if not audio_files:
-        if status_callback: status_callback("No audio files found in the input folder.")
-        return
+        audio_files = [f for f in os.listdir(input_folder) if f.lower().endswith(('.wav', '.mp3', '.flac', '.aiff'))]
+        
+        if not audio_files:
+            if status_callback: status_callback("No audio files found in the input folder.")
+            return
 
-    total_files = len(audio_files)
-    for i, filename in enumerate(audio_files):
-        input_path = os.path.join(input_folder, filename)
-        output_path = os.path.join(output_folder, f"{os.path.splitext(filename)[0]}_mastered{os.path.splitext(filename)[1]}")
-        
-        # Create a copy of settings for each file
-        file_settings = settings.copy()
-        file_settings["input_file"] = input_path
-        file_settings["output_file"] = output_path
-        
-        if status_callback: status_callback(f"Processing file {i+1}/{total_files}: {filename}")
-        
-        # Call the single-file processing function
-        process_audio(file_settings, status_callback, is_batch=True)
+        total_files = len(audio_files)
+        for i, filename in enumerate(audio_files):
+            input_path = os.path.join(input_folder, filename)
+            output_path = os.path.join(output_folder, f"{os.path.splitext(filename)[0]}_mastered{os.path.splitext(filename)[1]}")
+            
+            file_settings = settings.copy()
+            file_settings["input_file"] = input_path
+            file_settings["output_file"] = output_path
+            
+            if status_callback: status_callback(f"Processing file {i+1}/{total_files}: {filename}")
+            
+            process_audio(file_settings, status_callback, is_batch=True)
 
-    if status_callback: status_callback(f"Batch processing complete! {total_files} files mastered.")
+        if status_callback: status_callback(f"Batch processing complete! {total_files} files mastered.")
+
+    except Exception as e:
+        if status_callback: status_callback(f"Error during batch processing: {e}")
 
 
 # --- SINGLE FILE PROCESSING LOGIC ---
 def process_audio(settings, status_callback=None, is_batch=False):
-    """The main audio processing function for a single file."""
-    input_file = settings.get("input_file")
-    output_file = settings.get("output_file")
+    """The main audio processing function for a single file with error handling."""
+    try:
+        input_file = settings.get("input_file")
+        output_file = settings.get("output_file")
 
-    if not input_file or not output_file:
-        if status_callback: status_callback("Error: Input or output file not specified.")
-        return
-    if not os.path.exists(input_file):
-        if status_callback: status_callback(f"Error: Input file not found at '{input_file}'")
-        return
+        if not input_file or not output_file:
+            if status_callback: status_callback("Error: Input or output file not specified.")
+            return
+        if not os.path.exists(input_file):
+            if status_callback: status_callback(f"Error: Input file not found at '{input_file}'")
+            return
 
-    if not is_batch and status_callback: status_callback(f"Loading audio file: {input_file}")
-    audio = AudioSegment.from_file(input_file)
-    
-    chunk_size_ms = 30 * 1000
-    processed_chunks = []
-    num_chunks = len(range(0, len(audio), chunk_size_ms))
-    
-    for i, start_ms in enumerate(range(0, len(audio), chunk_size_ms)):
-        chunk = audio[start_ms:start_ms+chunk_size_ms]
-        chunk_samples = audio_segment_to_float_array(chunk)
+        if not is_batch and status_callback: status_callback(f"Loading audio file: {input_file}")
+        audio = AudioSegment.from_file(input_file)
         
-        if settings.get("saturation", 0.0) > 0:
-            chunk_samples = apply_saturation(chunk_samples, settings.get("saturation"))
-        processed_samples = apply_eq_to_samples(chunk_samples, chunk.frame_rate, settings)
-        if settings.get("width", 1.0) != 1.0:
-            processed_samples = apply_stereo_width(processed_samples, settings.get("width"))
-        processed_chunk = float_array_to_audio_segment(processed_samples, chunk)
-        if settings.get("multiband"):
-            processed_chunk = apply_multiband_compressor(processed_chunk, settings)
-        elif settings.get("compress"):
-            processed_chunk = compress_dynamic_range(processed_chunk)
-        processed_chunks.append(processed_chunk)
+        chunk_size_ms = 30 * 1000
+        processed_chunks = []
+        num_chunks = len(range(0, len(audio), chunk_size_ms))
         
-    processed_audio = sum(processed_chunks)
-    final_samples = audio_segment_to_float_array(processed_audio)
+        for i, start_ms in enumerate(range(0, len(audio), chunk_size_ms)):
+            chunk = audio[start_ms:start_ms+chunk_size_ms]
+            chunk_samples = audio_segment_to_float_array(chunk)
+            
+            if settings.get("saturation", 0.0) > 0:
+                chunk_samples = apply_saturation(chunk_samples, settings.get("saturation"))
+            processed_samples = apply_eq_to_samples(chunk_samples, chunk.frame_rate, settings)
+            if settings.get("width", 1.0) != 1.0:
+                processed_samples = apply_stereo_width(processed_samples, settings.get("width"))
+            processed_chunk = float_array_to_audio_segment(processed_samples, chunk)
+            if settings.get("multiband"):
+                processed_chunk = apply_multiband_compressor(processed_chunk, settings)
+            elif settings.get("compress"):
+                processed_chunk = compress_dynamic_range(processed_chunk)
+            processed_chunks.append(processed_chunk)
+            if not is_batch and status_callback: status_callback(f"Processing chunk {i+1}/{num_chunks}...")
+            
+        if not is_batch and status_callback: status_callback("Assembling chunks...")
+        processed_audio = sum(processed_chunks)
+        final_samples = audio_segment_to_float_array(processed_audio)
 
-    if settings.get("lufs") is not None:
-        final_samples = normalize_to_lufs(final_samples, processed_audio.frame_rate, settings.get("lufs"))
+        if settings.get("lufs") is not None:
+            if not is_batch and status_callback: status_callback("Normalizing loudness...")
+            final_samples = normalize_to_lufs(final_samples, processed_audio.frame_rate, settings.get("lufs"))
 
-    final_samples = soft_limiter(final_samples)
-    final_audio = float_array_to_audio_segment(final_samples, processed_audio)
+        final_samples = soft_limiter(final_samples)
+        final_audio = float_array_to_audio_segment(final_samples, processed_audio)
 
-    output_format = os.path.splitext(output_file)[1][1:] or "wav"
-    final_audio.export(output_file, format=output_format)
-    if not is_batch and status_callback: status_callback("Processing complete!")
+        if not is_batch and status_callback: status_callback("Exporting file...")
+        output_format = os.path.splitext(output_file)[1][1:] or "wav"
+        final_audio.export(output_file, format=output_format)
+        
+        if not is_batch and status_callback: status_callback("Processing complete!")
+
+    except Exception as e:
+        if status_callback: status_callback(f"Error processing '{os.path.basename(input_file)}': {e}")
 
 
 # --- HELPER FUNCTIONS ---
