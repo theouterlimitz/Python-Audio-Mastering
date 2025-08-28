@@ -1,9 +1,8 @@
-# File: Dockerfile
 # Use an official Python 3.11 runtime as a parent image
 FROM python:3.11-slim
 
 # Install system dependencies required by pydub
-RUN apt-get update && apt-get install -y ffmpeg
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg
 
 # Set the working directory in the container
 WORKDIR /app
