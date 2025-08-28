@@ -1,0 +1,7 @@
+# File: requirements.txt
+pydub
+scipy
+numpy
+pyloudnorm
+google-cloud-storage
+Flask==2.3.2
