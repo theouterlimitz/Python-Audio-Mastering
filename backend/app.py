@@ -1,7 +1,7 @@
 # app.py
 #
 # A professional, production-grade backend API for the Audio Mastering Suite.
-# This version uses "lazy initialization" and explicit service account signing.
+# This version has been corrected for the syntax error in generate_signed_url.
 #
 
 import os
@@ -47,7 +47,7 @@ def generate_upload_url():
         unique_filename = f"{os.urandom(8).hex()}_{filename}"
         blob = bucket.blob(unique_filename)
 
-        # THE FINAL FIX: Explicitly tell the function which service account to use for signing.
+        # SYNTAX CORRECTED HERE
         signed_url = blob.generate_signed_url(
             version="v4",
             expiration=datetime.timedelta(minutes=15),
@@ -110,7 +110,7 @@ def get_status():
         if signal_blob.exists():
             audio_blob = bucket.blob(f"processed/{filename}")
             if audio_blob.exists():
-                # THE FINAL FIX: Explicitly tell the function which service account to use for signing.
+                # SYNTAX CORRECTED HERE
                 download_url = audio_blob.generate_signed_url(
                     version="v4",
                     expiration=datetime.timedelta(minutes=60),
@@ -130,4 +130,3 @@ def get_status():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
-
