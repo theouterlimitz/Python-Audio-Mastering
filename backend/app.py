@@ -93,24 +93,28 @@ def generate_upload_url():
         return jsonify({"error": "Server failed to generate upload URL."}), 500
 
 # app.py
-...
+# ...
 @app.route('/start-processing', methods=['POST'])
 def start_processing():
     try:
-        publisher = pubsub_v1.PublisherClient(credentials=credentials)
-        topic_path = publisher.topic_path(PROJECT_ID, TOPIC_ID)
+        # ... all your existing code here ...
+        print("DEBUG: Attempting to publish message to Pub/Sub topic...")
+        print(f"DEBUG: Topic Path: {topic_path}")
+        print(f"DEBUG: Message Data: {job_data}")
 
-        request_data = request.get_json()
-        if not request_data or 'filename' not in request_data or 'settings' not in request_data:
-            return jsonify({"error": "Missing filename or settings in request"}), 400
+        future = publisher.publish(topic_path, message_data)
 
-        # --- MODIFICATION START ---
-        # Add the bucket_name field to the job_data
-        job_data = {
-            "bucket_name": BUCKET_NAME,
-            "file_name": request_data['filename'],
-            "settings": request_data['settings']
+        # This line will block until the message is published or fails
+        result = future.result()
+        print(f"DEBUG: Message published successfully. Message ID: {result}")
+
+        return jsonify({"message": "Processing job started successfully."}), 200
+    except Exception as e:
+        print(f"ERROR in /start-processing: {e}")
+        traceback.print_exc()
+        return jsonify({"error": "Server failed to start processing job. Check logs for details."}), 500
         }
+        
         # --- MODIFICATION END ---
         
         message_data = json.dumps(job_data).encode("utf-8")
