@@ -1,0 +1,1 @@
+Flask==2.3.2Flask-Cors==4.0.0google-cloud-storagegoogle-cloud-pubsubgunicorn==21.2.0

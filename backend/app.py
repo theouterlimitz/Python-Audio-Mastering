@@ -1,7 +1,7 @@
 # app.py
 #
-# This version explicitly loads the service account key to bypass
-# any local authentication issues.
+# This final version forces the URL signing function to use the
+# service account key directly by passing the credentials object.
 #
 
 import os
@@ -9,28 +9,29 @@ import json
 import datetime
 from flask import Flask, request, jsonify
 from google.cloud import storage, pubsub_v1
+from google.oauth2 import service_account # Import the service_account module
 from flask_cors import CORS
 
 # --- Configuration ---
 BUCKET_NAME = "tactile-temple-395019-audio-uploads"
 PROJECT_ID = "tactile-temple-395019"
 TOPIC_ID = "mastering-jobs"
-
-# --- THIS IS THE NEW, IMPORTANT PART ---
-# Explicitly point to your service account key file.
-# Make sure the key file is in the same directory as this script.
 SERVICE_ACCOUNT_KEY_PATH = "service-account-key.json"
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = SERVICE_ACCOUNT_KEY_PATH
 
-
-# Initialize Flask and clients
+# Initialize Flask
 app = Flask(__name__)
 CORS(app)
 
-storage_client = storage.Client()
-publisher = pubsub_v1.PublisherClient()
-bucket = storage_client.bucket(BUCKET_NAME)
-topic_path = publisher.topic_path(PROJECT_ID, TOPIC_ID)
+# --- Initialize clients that don't need signing ---
+try:
+    # Use the key for the publisher, which is less problematic
+    publisher = pubsub_v1.PublisherClient.from_service_account_json(SERVICE_ACCOUNT_KEY_PATH)
+    storage_client_for_uploads = storage.Client.from_service_account_json(SERVICE_ACCOUNT_KEY_PATH)
+    bucket_for_uploads = storage_client_for_uploads.bucket(BUCKET_NAME)
+    topic_path = publisher.topic_path(PROJECT_ID, TOPIC_ID)
+except FileNotFoundError:
+    print(f"FATAL ERROR: The service account key file was not found at '{SERVICE_ACCOUNT_KEY_PATH}'")
+    exit()
 
 @app.route('/')
 def hello_world():
@@ -38,6 +39,7 @@ def hello_world():
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
+    # This function remains the same
     if 'file' not in request.files:
         return jsonify({"error": "No file part in the request"}), 400
     
@@ -51,7 +53,7 @@ def upload_file():
 
     if file:
         try:
-            blob = bucket.blob(file.filename)
+            blob = bucket_for_uploads.blob(file.filename)
             blob.upload_from_file(file)
             print(f"File '{file.filename}' uploaded to bucket '{BUCKET_NAME}'.")
 
@@ -74,8 +76,8 @@ def upload_file():
             }), 200
 
         except Exception as e:
-            print(f"An error occurred: {e}")
-            return jsonify({"error": f"An error occurred: {e}"}), 500
+            print(f"An error occurred during upload: {e}")
+            return jsonify({"error": f"An error occurred during upload: {e}"}), 500
 
 @app.route('/status', methods=['GET'])
 def get_status():
@@ -83,20 +85,31 @@ def get_status():
     if not original_filename:
         return jsonify({"error": "Filename parameter is missing"}), 400
 
-    complete_blob_name = f"processed/{original_filename}.complete"
-    complete_blob = bucket.blob(complete_blob_name)
-
-    if not complete_blob.exists():
-        return jsonify({"status": "processing"}), 200
-    
-    mastered_blob_name = f"processed/{original_filename}"
-    mastered_blob = bucket.blob(mastered_blob_name)
-    
     try:
+        # --- THIS IS THE CRUCIAL CHANGE ---
+        # 1. Create a credentials object directly from the key file.
+        credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_KEY_PATH)
+        
+        # 2. Create a storage client using these specific credentials.
+        signing_client = storage.Client(credentials=credentials)
+        bucket = signing_client.bucket(BUCKET_NAME)
+        # --- END OF CHANGE ---
+
+        complete_blob_name = f"processed/{original_filename}.complete"
+        complete_blob = bucket.blob(complete_blob_name)
+
+        if not complete_blob.exists():
+            return jsonify({"status": "processing"}), 200
+        
+        mastered_blob_name = f"processed/{original_filename}"
+        mastered_blob = bucket.blob(mastered_blob_name)
+        
+        # 3. Use the credentials object to sign the URL.
         download_url = mastered_blob.generate_signed_url(
             version="v4",
             expiration=datetime.timedelta(minutes=15),
             method="GET",
+            credentials=credentials, # Explicitly pass the credentials here
         )
         
         complete_blob.delete()
@@ -107,9 +120,8 @@ def get_status():
         }), 200
         
     except Exception as e:
-        print(f"Error generating signed URL: {e}")
+        print(f"Error in status check: {e}")
         return jsonify({"error": f"Could not generate download link: {e}"}), 500
-
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

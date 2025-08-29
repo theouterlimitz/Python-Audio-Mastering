@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF--8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Audio Mastering</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        input[type=range]::-webkit-slider-runnable-track {
+            background: #374151;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            background: #3b82f6;
+            cursor: pointer;
+            height: 1.25rem;
+            width: 1.25rem;
+            border-radius: 9999px;
+            margin-top: -0.375rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen font-sans p-4">
+
+    <div class="bg-gray-800 p-8 rounded-lg shadow-2xl w-full max-w-2xl">
+        <h1 class="text-3xl font-bold mb-6 text-center text-blue-400">Audio Mastering Suite</h1>
+
+        <form id="uploadForm" class="space-y-6">
+            
+            <div class="bg-gray-900 p-4 rounded-lg">
+                <h2 class="text-xl font-semibold mb-4 text-gray-300">1. Select File</h2>
+                <div class="flex items-center space-x-4">
+                    <label for="fileInput" 
+                           class="flex-shrink-0 cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                        Choose File
+                    </label>
+                    <input type="file" id="fileInput" name="file" required class="hidden"/>
+                    <span id="fileName" class="text-gray-400 truncate">No file selected...</span>
+                </div>
+            </div>
+
+            <div class="bg-gray-900 p-4 rounded-lg space-y-4">
+                <h2 class="text-xl font-semibold mb-2 text-gray-300">2. Adjust Parameters</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                    <div class="slider-container" data-slider-id="saturation">
+                        <label for="saturation" class="block text-sm font-medium text-gray-300">Saturation (%)</label>
+                        <div class="flex items-center space-x-3">
+                            <input type="range" id="saturation" min="0" max="100" value="0" step="1" class="w-full h-2 rounded-lg appearance-none cursor-pointer">
+                            <span class="slider-value text-blue-400 font-mono w-12 text-center">0</span>
+                        </div>
+                    </div>
+                    <div class="slider-container" data-slider-id="bass_boost">
+                        <label for="bass_boost" class="block text-sm font-medium text-gray-300">Bass (dB)</label>
+                        <div class="flex items-center space-x-3">
+                            <input type="range" id="bass_boost" min="-6" max="6" value="0" step="0.5" class="w-full h-2 rounded-lg appearance-none cursor-pointer">
+                            <span class="slider-value text-blue-400 font-mono w-12 text-center">0.0</span>
+                        </div>
+                    </div>
+                    <div class="slider-container" data-slider-id="mid_cut">
+                        <label for="mid_cut" class="block text-sm font-medium text-gray-300">Mid Cut (dB)</label>
+                        <div class="flex items-center space-x-3">
+                            <input type="range" id="mid_cut" min="0" max="6" value="0" step="0.5" class="w-full h-2 rounded-lg appearance-none cursor-pointer">
+                            <span class="slider-value text-blue-400 font-mono w-12 text-center">0.0</span>
+                        </div>
+                    </div>
+                    <div class="slider-container" data-slider-id="presence_boost">
+                        <label for="presence_boost" class="block text-sm font-medium text-gray-300">Presence (dB)</label>
+                        <div class="flex items-center space-x-3">
+                            <input type="range" id="presence_boost" min="-6" max="6" value="0" step="0.5" class="w-full h-2 rounded-lg appearance-none cursor-pointer">
+                            <span class="slider-value text-blue-400 font-mono w-12 text-center">0.0</span>
+                        </div>
+                    </div>
+                    <div class="slider-container" data-slider-id="treble_boost">
+                        <label for="treble_boost" class="block text-sm font-medium text-gray-300">Treble (dB)</label>
+                        <div class="flex items-center space-x-3">
+                            <input type="range" id="treble_boost" min="-6" max="6" value="0" step="0.5" class="w-full h-2 rounded-lg appearance-none cursor-pointer">
+                            <span class="slider-value text-blue-400 font-mono w-12 text-center">0.0</span>
+                        </div>
+                    </div>
+                    <div class="slider-container" data-slider-id="width">
+                        <label for="width" class="block text-sm font-medium text-gray-300">Stereo Width</label>
+                        <div class="flex items-center space-x-3">
+                            <input type="range" id="width" min="0" max="2" value="1" step="0.05" class="w-full h-2 rounded-lg appearance-none cursor-pointer">
+                            <span class="slider-value text-blue-400 font-mono w-12 text-center">1.00</span>
+                        </div>
+                    </div>
+                    <div class="slider-container" data-slider-id="lufs">
+                        <label for="lufs" class="block text-sm font-medium text-gray-300">Target LUFS</label>
+                        <div class="flex items-center space-x-3">
+                            <input type="range" id="lufs" min="-24" max="-6" value="-14" step="0.5" class="w-full h-2 rounded-lg appearance-none cursor-pointer">
+                            <span class="slider-value text-blue-400 font-mono w-12 text-center">-14.0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-4">
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="checkbox" id="use_multiband" class="form-checkbox h-5 w-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500">
+                        <span class="text-gray-300 font-medium">Use Multiband Compressor</span>
+                    </label>
+                </div>
+            </div>
+
+            <button type="submit" id="submitButton"
+                    class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 text-lg">
+                Upload & Process
+            </button>
+        </form>
+
+        <div id="status" class="mt-6 text-center text-gray-400"></div>
+        
+        <!-- Download button will be injected here by JavaScript -->
+        <div id="downloadArea" class="mt-4"></div>
+    </div>
+
+    <script>
+        const uploadForm = document.getElementById('uploadForm');
+        const fileInput = document.getElementById('fileInput');
+        const fileNameSpan = document.getElementById('fileName');
+        const statusDiv = document.getElementById('status');
+        const downloadArea = document.getElementById('downloadArea');
+        const submitButton = document.getElementById('submitButton');
+
+        let pollingInterval;
+
+        // Update file name display
+        fileInput.addEventListener('change', () => {
+            fileNameSpan.textContent = fileInput.files.length > 0 ? fileInput.files[0].name : 'No file selected...';
+        });
+
+        // Update slider value displays
+        document.querySelectorAll('.slider-container').forEach(container => {
+            const slider = container.querySelector('input[type=range]');
+            const valueSpan = container.querySelector('.slider-value');
+            slider.addEventListener('input', () => {
+                const value = parseFloat(slider.value);
+                if (slider.step >= 1) { valueSpan.textContent = value.toFixed(0); }
+                else if (slider.step >= 0.1) { valueSpan.textContent = value.toFixed(1); }
+                else { valueSpan.textContent = value.toFixed(2); }
+            });
+        });
+
+        // Main upload form submission
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Reset previous results
+            clearInterval(pollingInterval);
+            downloadArea.innerHTML = '';
+            submitButton.disabled = true;
+            submitButton.textContent = 'Uploading...';
+
+            const file = fileInput.files[0];
+            if (!file) {
+                statusDiv.textContent = 'Please select a file first.';
+                statusDiv.className = 'mt-6 text-center text-red-400';
+                submitButton.disabled = false;
+                submitButton.textContent = 'Upload & Process';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const settings = {};
+            document.querySelectorAll('.slider-container input[type=range]').forEach(slider => {
+                settings[slider.id] = slider.value;
+            });
+            settings['use_multiband'] = document.getElementById('use_multiband').checked;
+            formData.append('settings', JSON.stringify(settings));
+
+            statusDiv.textContent = 'Uploading file...';
+            statusDiv.className = 'mt-6 text-center text-yellow-400';
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    statusDiv.textContent = 'Upload complete! Processing in the cloud... (this may take a few minutes)';
+                    statusDiv.className = 'mt-6 text-center text-blue-400';
+                    // Start polling for the result
+                    startPolling(result.original_filename);
+                } else {
+                    handleError(result.error);
+                }
+            } catch (error) {
+                handleError('Could not connect to the server. Is it running?');
+            }
+        });
+
+        function startPolling(filename) {
+            pollingInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`http://127.0.0.1:5000/status?filename=${encodeURIComponent(filename)}`);
+                    const result = await response.json();
+
+                    if (result.status === 'complete') {
+                        clearInterval(pollingInterval);
+                        statusDiv.textContent = 'Processing complete!';
+                        statusDiv.className = 'mt-6 text-center text-green-400';
+                        createDownloadButton(result.download_url);
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'Process Another File';
+                    } else if (result.status === 'processing') {
+                        // Keep waiting, status message is already set
+                        console.log('Still processing...');
+                    } else {
+                        handleError(result.error || 'An unknown error occurred during processing.');
+                    }
+                } catch (error) {
+                    handleError('Polling failed. Could not connect to the server.');
+                }
+            }, 10000); // Check every 10 seconds
+        }
+
+        function createDownloadButton(url) {
+            const downloadButton = document.createElement('a');
+            downloadButton.href = url;
+            downloadButton.textContent = 'Download Mastered File';
+            downloadButton.className = 'block w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 text-lg text-center';
+            downloadArea.appendChild(downloadButton);
+        }
+
+        function handleError(errorMessage) {
+            clearInterval(pollingInterval);
+            statusDiv.textContent = `Error: ${errorMessage}`;
+            statusDiv.className = 'mt-6 text-center text-red-400';
+            submitButton.disabled = false;
+            submitButton.textContent = 'Upload & Process';
+        }
+
+    </script>
+
+</body>
+</html>
