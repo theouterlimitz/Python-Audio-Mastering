@@ -19,17 +19,14 @@ def process_mastering():
     This Cloud Function is triggered by a message on a Pub/Sub topic.
     The event data is sent via an HTTP POST request from Eventarc.
     """
-    # The event data is wrapped in a Pub/Sub message format.
     envelope = request.get_json()
     if not envelope or 'message' not in envelope:
         print("Error: Invalid Pub/Sub message format")
         return "Bad Request: Invalid Pub/Sub message format", 400
 
-    # The actual job ticket is a base64-encoded string in the 'data' field.
     pubsub_message = base64.b64decode(envelope['message']['data']).decode('utf-8')
     data = json.loads(pubsub_message)
     
-    # Extract file details and settings from the job ticket
     bucket_name = data['bucket_name']
     file_name = data['file_name']
     settings = data['settings']
@@ -81,6 +78,11 @@ def process_mastering():
     output_blob = bucket.blob(output_blob_name)
     output_blob.upload_from_filename(temp_output_path)
     
+    # --- Create the ".complete" signal file ---
+    complete_blob_name = f"processed/{os.path.basename(file_name)}.complete"
+    complete_blob = bucket.blob(complete_blob_name)
+    complete_blob.upload_from_string("done")
+    
     print(f"Successfully processed {file_name} and uploaded to {output_blob_name}")
 
     os.remove(temp_input_path)
@@ -126,7 +128,6 @@ def apply_eq_to_samples(samples, sample_rate, settings):
         right = apply_shelf_filter(right, sample_rate, 8000, float(settings.get("treble_boost", 0.0)), 'high')
         return np.array([left, right]).T
     else:
-        # Mono processing (can be simplified if only stereo is expected)
         return samples
 
 def apply_shelf_filter(samples, sample_rate, cutoff_hz, gain_db, filter_type, order=5):
