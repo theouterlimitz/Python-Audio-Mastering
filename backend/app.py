@@ -92,6 +92,8 @@ def generate_upload_url():
         traceback.print_exc()
         return jsonify({"error": "Server failed to generate upload URL."}), 500
 
+# app.py
+...
 @app.route('/start-processing', methods=['POST'])
 def start_processing():
     try:
@@ -102,7 +104,15 @@ def start_processing():
         if not request_data or 'filename' not in request_data or 'settings' not in request_data:
             return jsonify({"error": "Missing filename or settings in request"}), 400
 
-        job_data = { "filename": request_data['filename'], "settings": request_data['settings'] }
+        # --- MODIFICATION START ---
+        # Add the bucket_name field to the job_data
+        job_data = {
+            "bucket_name": BUCKET_NAME,
+            "file_name": request_data['filename'],
+            "settings": request_data['settings']
+        }
+        # --- MODIFICATION END ---
+        
         message_data = json.dumps(job_data).encode("utf-8")
         future = publisher.publish(topic_path, message_data)
         future.result()
@@ -112,6 +122,7 @@ def start_processing():
         print(f"ERROR in /start-processing: {e}")
         traceback.print_exc()
         return jsonify({"error": "Server failed to start processing job."}), 500
+...
 
 @app.route('/status', methods=['GET'])
 def get_status():
