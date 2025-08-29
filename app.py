@@ -1,7 +1,7 @@
 # app.py
 #
-# This final version adds the /status endpoint for the frontend to poll,
-# and logic to generate a secure download link.
+# This version explicitly loads the service account key to bypass
+# any local authentication issues.
 #
 
 import os
@@ -15,6 +15,13 @@ from flask_cors import CORS
 BUCKET_NAME = "tactile-temple-395019-audio-uploads"
 PROJECT_ID = "tactile-temple-395019"
 TOPIC_ID = "mastering-jobs"
+
+# --- THIS IS THE NEW, IMPORTANT PART ---
+# Explicitly point to your service account key file.
+# Make sure the key file is in the same directory as this script.
+SERVICE_ACCOUNT_KEY_PATH = "service-account-key.json"
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = SERVICE_ACCOUNT_KEY_PATH
+
 
 # Initialize Flask and clients
 app = Flask(__name__)
@@ -44,12 +51,10 @@ def upload_file():
 
     if file:
         try:
-            # 1. Upload the original file to Cloud Storage
             blob = bucket.blob(file.filename)
             blob.upload_from_file(file)
             print(f"File '{file.filename}' uploaded to bucket '{BUCKET_NAME}'.")
 
-            # 2. Prepare the job message for the worker
             settings = json.loads(settings_str)
             message_data = {
                 "gcs_uri": f"gs://{BUCKET_NAME}/{file.filename}",
@@ -58,13 +63,11 @@ def upload_file():
                 "settings": settings
             }
             
-            # 3. Publish the job to the Pub/Sub topic
             future = publisher.publish(topic_path, data=json.dumps(message_data).encode("utf-8"))
             future.result()
 
             print(f"Job for '{file.filename}' published to topic '{TOPIC_ID}'.")
             
-            # Return the original filename to the frontend so it knows what to poll for
             return jsonify({
                 "message": f"File '{file.filename}' uploaded and sent for processing!",
                 "original_filename": file.filename
@@ -76,34 +79,26 @@ def upload_file():
 
 @app.route('/status', methods=['GET'])
 def get_status():
-    """
-    Checks if a processed file is ready and returns a download link if it is.
-    """
     original_filename = request.args.get('filename')
     if not original_filename:
         return jsonify({"error": "Filename parameter is missing"}), 400
 
-    # Check for the existence of the ".complete" signal file
     complete_blob_name = f"processed/{original_filename}.complete"
     complete_blob = bucket.blob(complete_blob_name)
 
     if not complete_blob.exists():
         return jsonify({"status": "processing"}), 200
     
-    # If the .complete file exists, the audio is ready.
-    # Generate a signed URL for the mastered audio file.
     mastered_blob_name = f"processed/{original_filename}"
     mastered_blob = bucket.blob(mastered_blob_name)
     
     try:
-        # This URL is secure and will expire in 15 minutes.
         download_url = mastered_blob.generate_signed_url(
             version="v4",
             expiration=datetime.timedelta(minutes=15),
             method="GET",
         )
         
-        # Clean up the signal file after generating the link
         complete_blob.delete()
         
         return jsonify({

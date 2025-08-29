@@ -28,3 +28,4 @@ env/
 # Operating System files
 .DS_Store
 Thumbs.db
+service-account-key.json
