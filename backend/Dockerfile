@@ -16,7 +16,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application's code
 COPY . .
 
-# --- FORENSIC STARTUP COMMAND ---
-# This is a temporary command to force the real startup error into the logs.
-# It will be replaced with the Gunicorn command once we find and fix the bug.
-CMD ["sh", "-c", "echo '--- FORENSIC STARTUP ---' && ls -lR /app && echo '--- PYTHON VERSION ---' && python --version && echo '--- ATTEMPTING TO RUN APP ---' && python app.py"]
+# Define environment variable for the port
+ENV PORT 8080
+
+# --- PRODUCTION STARTUP COMMAND ---
+# Run the application with the Gunicorn production server.
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "app:app"]
