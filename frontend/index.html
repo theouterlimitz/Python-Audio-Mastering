@@ -1,240 +1,296 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF--8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Python Audio Mastering</title>
+    <title>Audio Mastering Suite</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        input[type=range]::-webkit-slider-runnable-track {
-            background: #374151;
-        }
-        input[type=range]::-webkit-slider-thumb {
+        body { font-family: 'Inter', sans-serif; }
+        .slider-thumb::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            background: #3b82f6;
+            width: 16px;
+            height: 16px;
+            background: #4F46E5;
             cursor: pointer;
-            height: 1.25rem;
-            width: 1.25rem;
-            border-radius: 9999px;
-            margin-top: -0.375rem;
+            border-radius: 50%;
+        }
+        .slider-thumb::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #4F46E5;
+            cursor: pointer;
+            border-radius: 50%;
         }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen font-sans p-4">
+<body class="bg-gray-900 text-gray-200 flex items-center justify-center min-h-screen">
 
-    <div class="bg-gray-800 p-8 rounded-lg shadow-2xl w-full max-w-2xl">
-        <h1 class="text-3xl font-bold mb-6 text-center text-blue-400">Audio Mastering Suite</h1>
+    <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl w-full max-w-2xl border border-gray-700">
+        <h1 class="text-3xl font-bold text-center mb-2 text-white">Audio Mastering Suite</h1>
+        <p class="text-center text-gray-400 mb-8">Upload your track and adjust the parameters to craft your sound.</p>
 
-        <form id="uploadForm" class="space-y-6">
-            
-            <div class="bg-gray-900 p-4 rounded-lg">
-                <h2 class="text-xl font-semibold mb-4 text-gray-300">1. Select File</h2>
-                <div class="flex items-center space-x-4">
-                    <label for="fileInput" 
-                           class="flex-shrink-0 cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
-                        Choose File
-                    </label>
-                    <input type="file" id="fileInput" name="file" required class="hidden"/>
-                    <span id="fileName" class="text-gray-400 truncate">No file selected...</span>
-                </div>
+        <!-- Step 1: File Selection -->
+        <div class="mb-6 bg-gray-900/50 p-6 rounded-xl border border-gray-700">
+            <h2 class="text-xl font-semibold mb-4 text-white">1. Select File</h2>
+            <div class="flex items-center space-x-4">
+                <label for="file-input" class="flex-shrink-0 cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300">
+                    Choose File
+                </label>
+                <input type="file" id="file-input" class="hidden">
+                <span id="file-name" class="text-gray-400 truncate">No file selected</span>
             </div>
-
-            <div class="bg-gray-900 p-4 rounded-lg space-y-4">
-                <h2 class="text-xl font-semibold mb-2 text-gray-300">2. Adjust Parameters</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                    <div class="slider-container" data-slider-id="saturation">
-                        <label for="saturation" class="block text-sm font-medium text-gray-300">Saturation (%)</label>
-                        <div class="flex items-center space-x-3">
-                            <input type="range" id="saturation" min="0" max="100" value="0" step="1" class="w-full h-2 rounded-lg appearance-none cursor-pointer">
-                            <span class="slider-value text-blue-400 font-mono w-12 text-center">0</span>
-                        </div>
-                    </div>
-                    <div class="slider-container" data-slider-id="bass_boost">
-                        <label for="bass_boost" class="block text-sm font-medium text-gray-300">Bass (dB)</label>
-                        <div class="flex items-center space-x-3">
-                            <input type="range" id="bass_boost" min="-6" max="6" value="0" step="0.5" class="w-full h-2 rounded-lg appearance-none cursor-pointer">
-                            <span class="slider-value text-blue-400 font-mono w-12 text-center">0.0</span>
-                        </div>
-                    </div>
-                    <div class="slider-container" data-slider-id="mid_cut">
-                        <label for="mid_cut" class="block text-sm font-medium text-gray-300">Mid Cut (dB)</label>
-                        <div class="flex items-center space-x-3">
-                            <input type="range" id="mid_cut" min="0" max="6" value="0" step="0.5" class="w-full h-2 rounded-lg appearance-none cursor-pointer">
-                            <span class="slider-value text-blue-400 font-mono w-12 text-center">0.0</span>
-                        </div>
-                    </div>
-                    <div class="slider-container" data-slider-id="presence_boost">
-                        <label for="presence_boost" class="block text-sm font-medium text-gray-300">Presence (dB)</label>
-                        <div class="flex items-center space-x-3">
-                            <input type="range" id="presence_boost" min="-6" max="6" value="0" step="0.5" class="w-full h-2 rounded-lg appearance-none cursor-pointer">
-                            <span class="slider-value text-blue-400 font-mono w-12 text-center">0.0</span>
-                        </div>
-                    </div>
-                    <div class="slider-container" data-slider-id="treble_boost">
-                        <label for="treble_boost" class="block text-sm font-medium text-gray-300">Treble (dB)</label>
-                        <div class="flex items-center space-x-3">
-                            <input type="range" id="treble_boost" min="-6" max="6" value="0" step="0.5" class="w-full h-2 rounded-lg appearance-none cursor-pointer">
-                            <span class="slider-value text-blue-400 font-mono w-12 text-center">0.0</span>
-                        </div>
-                    </div>
-                    <div class="slider-container" data-slider-id="width">
-                        <label for="width" class="block text-sm font-medium text-gray-300">Stereo Width</label>
-                        <div class="flex items-center space-x-3">
-                            <input type="range" id="width" min="0" max="2" value="1" step="0.05" class="w-full h-2 rounded-lg appearance-none cursor-pointer">
-                            <span class="slider-value text-blue-400 font-mono w-12 text-center">1.00</span>
-                        </div>
-                    </div>
-                    <div class="slider-container" data-slider-id="lufs">
-                        <label for="lufs" class="block text-sm font-medium text-gray-300">Target LUFS</label>
-                        <div class="flex items-center space-x-3">
-                            <input type="range" id="lufs" min="-24" max="-6" value="-14" step="0.5" class="w-full h-2 rounded-lg appearance-none cursor-pointer">
-                            <span class="slider-value text-blue-400 font-mono w-12 text-center">-14.0</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="pt-4">
-                    <label class="flex items-center space-x-3 cursor-pointer">
-                        <input type="checkbox" id="use_multiband" class="form-checkbox h-5 w-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500">
-                        <span class="text-gray-300 font-medium">Use Multiband Compressor</span>
-                    </label>
-                </div>
-            </div>
-
-            <button type="submit" id="submitButton"
-                    class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 text-lg">
-                Upload & Process
-            </button>
-        </form>
-
-        <div id="status" class="mt-6 text-center text-gray-400"></div>
+        </div>
         
-        <!-- Download button will be injected here by JavaScript -->
-        <div id="downloadArea" class="mt-4"></div>
+        <!-- Step 2: Adjust Parameters -->
+        <div class="mb-6 bg-gray-900/50 p-6 rounded-xl border border-gray-700">
+            <h2 class="text-xl font-semibold mb-4 text-white">2. Adjust Parameters</h2>
+            <div id="controls-grid" class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                 <!-- Sliders will be dynamically added here -->
+            </div>
+             <div class="mt-4 flex items-center">
+                <input type="checkbox" id="use-multiband" class="h-4 w-4 rounded bg-gray-700 border-gray-600 text-indigo-600 focus:ring-indigo-500">
+                <label for="use-multiband" class="ml-2 text-sm font-medium text-gray-300">Use Multiband Compressor</label>
+            </div>
+            <div id="multiband-controls" class="hidden mt-4 space-y-4 border-t border-gray-700 pt-4">
+                 <!-- Multiband sliders will be dynamically added here -->
+            </div>
+        </div>
+
+        <!-- Step 3: Process -->
+        <button id="upload-button" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg text-lg transition-all duration-300 disabled:bg-gray-600 disabled:cursor-not-allowed">
+            Upload & Process
+        </button>
+
+        <!-- Status Area -->
+        <div id="status-area" class="mt-6 text-center text-gray-400 h-16 flex items-center justify-center">
+            <p id="status-text">Select a file to begin.</p>
+            <div id="download-area" class="hidden">
+                <a id="download-link" href="#" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg text-lg transition-colors duration-300">
+                    Download Mastered File
+                </a>
+            </div>
+        </div>
     </div>
 
-    <script>
-        const uploadForm = document.getElementById('uploadForm');
-        const fileInput = document.getElementById('fileInput');
-        const fileNameSpan = document.getElementById('fileName');
-        const statusDiv = document.getElementById('status');
-        const downloadArea = document.getElementById('downloadArea');
-        const submitButton = document.getElementById('submitButton');
+<script>
+    // --- Configuration ---
+    const BACKEND_URL = "https://python-audio-backend-1015299845182.us-central1.run.app"; 
+    
+    // --- Element References ---
+    const fileInput = document.getElementById('file-input');
+    const fileNameSpan = document.getElementById('file-name');
+    const uploadButton = document.getElementById('upload-button');
+    const statusText = document.getElementById('status-text');
+    const downloadArea = document.getElementById('download-area');
+    const downloadLink = document.getElementById('download-link');
+    const useMultibandCheckbox = document.getElementById('use-multiband');
+    const multibandControlsDiv = document.getElementById('multiband-controls');
+    
+    let selectedFile = null;
+    let pollingInterval = null;
 
-        let pollingInterval;
+    // --- Slider Definitions ---
+    const mainSliders = [
+        { id: 'saturation', label: 'Saturation (%)', min: 0, max: 100, step: 1, value: 10 },
+        { id: 'bass', label: 'Bass (dB)', min: -12, max: 12, step: 0.5, value: 0 },
+        { id: 'mid-cut', label: 'Mid Cut (dB)', min: -12, max: 12, step: 0.5, value: 0 },
+        { id: 'presence', label: 'Presence (dB)', min: -12, max: 12, step: 0.5, value: 0 },
+        { id: 'treble', label: 'Treble (dB)', min: -12, max: 12, step: 0.5, value: 0 },
+        { id: 'stereo-width', label: 'Stereo Width', min: 0, max: 2, step: 0.05, value: 1.0 },
+        { id: 'target-lufs', label: 'Target LUFS', min: -24, max: -6, step: 0.5, value: -14 }
+    ];
 
-        // Update file name display
-        fileInput.addEventListener('change', () => {
-            fileNameSpan.textContent = fileInput.files.length > 0 ? fileInput.files[0].name : 'No file selected...';
+    const multibandSliders = [
+        { id: 'low-thresh', label: 'Low Thresh (dB)', min: -60, max: 0, step: 1, value: -25 },
+        { id: 'low-ratio', label: 'Low Ratio', min: 1, max: 20, step: 0.1, value: 6.0 },
+        { id: 'mid-thresh', label: 'Mid Thresh (dB)', min: -60, max: 0, step: 1, value: -20 },
+        { id: 'mid-ratio', label: 'Mid Ratio', min: 1, max: 20, step: 0.1, value: 3.0 },
+        { id: 'high-thresh', label: 'High Thresh (dB)', min: -60, max: 0, step: 1, value: -15 },
+        { id: 'high-ratio', label: 'High Ratio', min: 1, max: 20, step: 0.1, value: 4.0 }
+    ];
+
+    // --- UI Initialization ---
+    function createSlider(container, { id, label, min, max, step, value }) {
+        const wrapper = document.createElement('div');
+        const labelEl = document.createElement('label');
+        labelEl.htmlFor = id;
+        labelEl.className = 'block text-sm font-medium text-gray-300 mb-1';
+        labelEl.textContent = label;
+
+        const valueSpan = document.createElement('span');
+        valueSpan.id = `${id}-value`;
+        valueSpan.className = 'float-right text-indigo-400 font-semibold';
+        valueSpan.textContent = value;
+
+        labelEl.appendChild(valueSpan);
+
+        const slider = document.createElement('input');
+        slider.type = 'range';
+        slider.id = id;
+        slider.min = min;
+        slider.max = max;
+        slider.step = step;
+        slider.value = value;
+        slider.className = 'w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb';
+        
+        slider.addEventListener('input', () => {
+            valueSpan.textContent = slider.value;
         });
 
-        // Update slider value displays
-        document.querySelectorAll('.slider-container').forEach(container => {
-            const slider = container.querySelector('input[type=range]');
-            const valueSpan = container.querySelector('.slider-value');
-            slider.addEventListener('input', () => {
-                const value = parseFloat(slider.value);
-                if (slider.step >= 1) { valueSpan.textContent = value.toFixed(0); }
-                else if (slider.step >= 0.1) { valueSpan.textContent = value.toFixed(1); }
-                else { valueSpan.textContent = value.toFixed(2); }
+        wrapper.appendChild(labelEl);
+        wrapper.appendChild(slider);
+        container.appendChild(wrapper);
+    }
+
+    createSlider(document.getElementById('controls-grid'), mainSliders[0]);
+    createSlider(document.getElementById('controls-grid'), mainSliders[1]);
+    createSlider(document.getElementById('controls-grid'), mainSliders[2]);
+    createSlider(document.getElementById('controls-grid'), mainSliders[3]);
+    createSlider(document.getElementById('controls-grid'), mainSliders[4]);
+    createSlider(document.getElementById('controls-grid'), mainSliders[5]);
+    createSlider(document.getElementById('controls-grid'), mainSliders[6]);
+    
+    multibandSliders.forEach(slider => createSlider(multibandControlsDiv, slider));
+
+    // --- Event Listeners ---
+    fileInput.addEventListener('change', (event) => {
+        selectedFile = event.target.files[0];
+        if (selectedFile) {
+            fileNameSpan.textContent = selectedFile.name;
+            statusText.textContent = "Ready to process.";
+        } else {
+            fileNameSpan.textContent = 'No file selected';
+        }
+    });
+
+    useMultibandCheckbox.addEventListener('change', () => {
+        multibandControlsDiv.classList.toggle('hidden');
+    });
+
+    uploadButton.addEventListener('click', handleUpload);
+
+    // --- Core Logic ---
+    async function handleUpload() {
+        if (!selectedFile) {
+            updateStatus('Please select a file first.', true);
+            return;
+        }
+
+        setUploadingState(true);
+        updateStatus('Step 1/4: Requesting secure upload link...');
+
+        try {
+            // STEP 1: Get the secure, signed URL from our backend
+            const getUrlResponse = await fetch(`${BACKEND_URL}/generate-upload-url`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    filename: selectedFile.name,
+                    contentType: selectedFile.type
+                })
             });
+
+            if (!getUrlResponse.ok) throw new Error('Could not get upload URL from server.');
+            const { signedUrl, uniqueFilename } = await getUrlResponse.json();
+
+            // STEP 2: Upload the file directly to Google Cloud Storage
+            updateStatus('Step 2/4: Uploading file directly to cloud storage...');
+            const uploadResponse = await fetch(signedUrl, {
+                method: 'PUT',
+                headers: { 'Content-Type': selectedFile.type },
+                body: selectedFile
+            });
+
+            if (!uploadResponse.ok) throw new Error('Direct upload to cloud storage failed.');
+
+            // STEP 3: Tell the backend to start the mastering process
+            updateStatus('Step 3/4: Starting mastering process...');
+            const settings = getSliderSettings();
+            
+            // This endpoint is NEW and we will add it to the backend next.
+            const startProcessingResponse = await fetch(`${BACKEND_URL}/start-processing`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    filename: uniqueFilename,
+                    settings: settings
+                })
+            });
+
+            if (!startProcessingResponse.ok) throw new Error('Could not start the processing job.');
+
+            // STEP 4: Start polling for the result
+            updateStatus('Step 4/4: Processing in the cloud... Please wait.', false, true);
+            startPolling(uniqueFilename);
+
+        } catch (error) {
+            console.error('Upload process failed:', error);
+            updateStatus(`Error: ${error.message}`, true);
+            setUploadingState(false);
+        }
+    }
+
+    function getSliderSettings() {
+        const settings = {};
+        mainSliders.forEach(s => {
+            settings[s.id.replace('-', '_')] = parseFloat(document.getElementById(s.id).value);
         });
-
-        // Main upload form submission
-        uploadForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            // Reset previous results
-            clearInterval(pollingInterval);
-            downloadArea.innerHTML = '';
-            submitButton.disabled = true;
-            submitButton.textContent = 'Uploading...';
-
-            const file = fileInput.files[0];
-            if (!file) {
-                statusDiv.textContent = 'Please select a file first.';
-                statusDiv.className = 'mt-6 text-center text-red-400';
-                submitButton.disabled = false;
-                submitButton.textContent = 'Upload & Process';
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('file', file);
-            
-            const settings = {};
-            document.querySelectorAll('.slider-container input[type=range]').forEach(slider => {
-                settings[slider.id] = slider.value;
+        settings.multiband = useMultibandCheckbox.checked;
+        if (settings.multiband) {
+            multibandSliders.forEach(s => {
+                settings[s.id.replace('-', '_')] = parseFloat(document.getElementById(s.id).value);
             });
-            settings['use_multiband'] = document.getElementById('use_multiband').checked;
-            formData.append('settings', JSON.stringify(settings));
+        }
+        return settings;
+    }
 
-            statusDiv.textContent = 'Uploading file...';
-            statusDiv.className = 'mt-6 text-center text-yellow-400';
+    function startPolling(filename) {
+        if (pollingInterval) clearInterval(pollingInterval);
 
+        pollingInterval = setInterval(async () => {
             try {
-                const response = await fetch('http://127.0.0.1:5000/upload', {
-                    method: 'POST',
-                    body: formData,
-                });
-                const result = await response.json();
-
+                const response = await fetch(`${BACKEND_URL}/status?filename=${encodeURIComponent(filename)}`);
                 if (response.ok) {
-                    statusDiv.textContent = 'Upload complete! Processing in the cloud... (this may take a few minutes)';
-                    statusDiv.className = 'mt-6 text-center text-blue-400';
-                    // Start polling for the result
-                    startPolling(result.original_filename);
-                } else {
-                    handleError(result.error);
+                    const data = await response.json();
+                    if (data.status === 'ready' && data.downloadUrl) {
+                        clearInterval(pollingInterval);
+                        showDownloadLink(data.downloadUrl);
+                        setUploadingState(false);
+                    }
                 }
             } catch (error) {
-                handleError('Could not connect to the server. Is it running?');
+                console.error('Polling error:', error);
             }
-        });
-
-        function startPolling(filename) {
-            pollingInterval = setInterval(async () => {
-                try {
-                    const response = await fetch(`http://127.0.0.1:5000/status?filename=${encodeURIComponent(filename)}`);
-                    const result = await response.json();
-
-                    if (result.status === 'complete') {
-                        clearInterval(pollingInterval);
-                        statusDiv.textContent = 'Processing complete!';
-                        statusDiv.className = 'mt-6 text-center text-green-400';
-                        createDownloadButton(result.download_url);
-                        submitButton.disabled = false;
-                        submitButton.textContent = 'Process Another File';
-                    } else if (result.status === 'processing') {
-                        // Keep waiting, status message is already set
-                        console.log('Still processing...');
-                    } else {
-                        handleError(result.error || 'An unknown error occurred during processing.');
-                    }
-                } catch (error) {
-                    handleError('Polling failed. Could not connect to the server.');
-                }
-            }, 10000); // Check every 10 seconds
+        }, 10000); // Poll every 10 seconds
+    }
+    
+    // --- UI State Helpers ---
+    function updateStatus(message, isError = false, isProcessing = false) {
+        statusText.textContent = message;
+        statusText.className = isError ? 'text-red-400' : 'text-gray-400';
+        if (isProcessing) {
+            statusText.innerHTML += '<span class="ml-2 animate-pulse">. . .</span>';
         }
+    }
 
-        function createDownloadButton(url) {
-            const downloadButton = document.createElement('a');
-            downloadButton.href = url;
-            downloadButton.textContent = 'Download Mastered File';
-            downloadButton.className = 'block w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 text-lg text-center';
-            downloadArea.appendChild(downloadButton);
-        }
+    function setUploadingState(isUploading) {
+        uploadButton.disabled = isUploading;
+        uploadButton.textContent = isUploading ? 'Processing...' : 'Upload & Process';
+        statusText.classList.remove('hidden');
+        downloadArea.classList.add('hidden');
+    }
 
-        function handleError(errorMessage) {
-            clearInterval(pollingInterval);
-            statusDiv.textContent = `Error: ${errorMessage}`;
-            statusDiv.className = 'mt-6 text-center text-red-400';
-            submitButton.disabled = false;
-            submitButton.textContent = 'Upload & Process';
-        }
+    function showDownloadLink(url) {
+        statusText.classList.add('hidden');
+        downloadArea.classList.remove('hidden');
+        downloadLink.href = url;
+    }
 
-    </script>
-
+</script>
 </body>
 </html>

@@ -1,15 +1,17 @@
 # app.py
 #
 # A professional, production-grade backend API for the Audio Mastering Suite.
-# This server's SOLE responsibility is to generate secure, short-lived
-# V4 signed URLs for direct-to-cloud file uploads. It does not handle
-# the file data itself, making it fast, scalable, and cost-effective.
+# This server handles the complete, modern workflow for large file uploads:
+# 1. Generates secure, short-lived V4 signed URLs for direct-to-cloud uploads.
+# 2. Starts the processing job via Pub/Sub after the client confirms the upload is complete.
+# 3. Polls for job completion and provides a secure download link.
 #
 
 import os
 import datetime
+import json
 from flask import Flask, request, jsonify
-from google.cloud import storage
+from google.cloud import storage, pubsub_v1
 from flask_cors import CORS
 
 # --- Configuration ---
@@ -20,8 +22,8 @@ PROJECT_ID = "tactile-temple-395019"
 TOPIC_ID = "mastering-jobs"
 
 app = Flask(__name__)
-# Allow all origins for simplicity in this stage. In a production app,
-# you would restrict this to your Netlify domain.
+# Allow all origins for simplicity. In a production app, you would restrict
+# this to your Netlify domain for enhanced security.
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # --- Routes ---
@@ -29,36 +31,26 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 @app.route('/')
 def hello():
     """A simple health check endpoint."""
-    return "Audio Mastering Backend is running and ready to generate URLs."
+    return "Audio Mastering Backend is running."
 
 @app.route('/generate-upload-url', methods=['POST'])
 def generate_upload_url():
     """
     Generates a V4 signed URL for a client to upload a file directly to GCS.
-    The client must provide the filename and content type in the request body.
     """
     try:
-        # Best practice: Initialize clients within the request function ("lazy initialization")
-        # This is more robust in a serverless environment.
         storage_client = storage.Client()
         bucket = storage_client.bucket(BUCKET_NAME)
 
-        # Get the required information from the client's request
         request_data = request.get_json()
         if not request_data or 'filename' not in request_data or 'contentType' not in request_data:
             return jsonify({"error": "Missing filename or contentType in request"}), 400
 
         filename = request_data['filename']
         content_type = request_data['contentType']
-        
-        # We will prefix the original filename with a unique ID for security
-        # and to prevent file collisions.
         unique_filename = f"{os.urandom(8).hex()}_{filename}"
-
         blob = bucket.blob(unique_filename)
 
-        # Generate the V4 signed URL. It's valid for a single PUT request
-        # and expires in 15 minutes. This is a highly secure method.
         signed_url = blob.generate_signed_url(
             version="v4",
             expiration=datetime.timedelta(minutes=15),
@@ -66,18 +58,78 @@ def generate_upload_url():
             content_type=content_type,
         )
 
-        # Return the signed URL and the unique filename to the client
-        return jsonify({
-            "signedUrl": signed_url,
-            "uniqueFilename": unique_filename
-        }), 200
+        return jsonify({"signedUrl": signed_url, "uniqueFilename": unique_filename}), 200
 
     except Exception as e:
         print(f"CRITICAL ERROR in /generate-upload-url: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": f"An unexpected server error occurred: {e}"}), 500
+        return jsonify({"error": "Server failed to generate upload URL."}), 500
 
-# This part is not strictly necessary for Gunicorn, but good practice.
+@app.route('/start-processing', methods=['POST'])
+def start_processing():
+    """
+    Receives the filename and settings from the client and publishes a job
+    to the Pub/Sub topic to trigger the worker.
+    """
+    try:
+        publisher = pubsub_v1.PublisherClient()
+        topic_path = publisher.topic_path(PROJECT_ID, TOPIC_ID)
+
+        request_data = request.get_json()
+        if not request_data or 'filename' not in request_data or 'settings' not in request_data:
+            return jsonify({"error": "Missing filename or settings in request"}), 400
+
+        job_data = {
+            "filename": request_data['filename'],
+            "settings": request_data['settings']
+        }
+
+        # Pub/Sub messages must be bytestrings.
+        message_data = json.dumps(job_data).encode("utf-8")
+        
+        future = publisher.publish(topic_path, message_data)
+        future.result() # Wait for the message to be published.
+
+        return jsonify({"message": "Processing job started successfully."}), 200
+
+    except Exception as e:
+        print(f"CRITICAL ERROR in /start-processing: {e}")
+        return jsonify({"error": "Server failed to start processing job."}), 500
+
+@app.route('/status', methods=['GET'])
+def get_status():
+    """
+    Checks if a processed file and its '.complete' signal file exist in GCS
+    and provides a download link if they do.
+    """
+    try:
+        filename = request.args.get('filename')
+        if not filename:
+            return jsonify({"error": "Filename parameter is required"}), 400
+
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(BUCKET_NAME)
+        
+        # Check for the signal file first, as it's the definitive "done" signal.
+        signal_blob = bucket.blob(f"processed/{filename}.complete")
+        
+        if signal_blob.exists():
+            audio_blob = bucket.blob(f"processed/{filename}")
+            if audio_blob.exists():
+                download_url = audio_blob.generate_signed_url(
+                    version="v4",
+                    expiration=datetime.timedelta(minutes=60), # Link is valid for 1 hour
+                    method="GET",
+                )
+                return jsonify({"status": "ready", "downloadUrl": download_url})
+            else:
+                 # This is an edge case, but good to handle.
+                 return jsonify({"status": "processing", "message": "Signal found but audio file is missing."})
+        else:
+            return jsonify({"status": "processing"})
+
+    except Exception as e:
+        print(f"CRITICAL ERROR in /status: {e}")
+        return jsonify({"error": "Server failed to get job status."}), 500
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
