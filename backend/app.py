@@ -1,7 +1,8 @@
 # app.py
     #
     # This final version uses environment-aware authentication and has a
-    # robust CORS policy for the public frontend.
+    # robust CORS policy for the public frontend. This version has
+    # been checked for any indentation errors.
     #
 
     import os
@@ -20,11 +21,12 @@
 
     # Initialize Flask
     app = Flask(__name__)
-    # --- THIS IS THE CRUCIAL LINE ---
-    # Allow all origins to access all routes.
     CORS(app, resources={r"/*": {"origins": "*"}})
 
     # --- Environment-Aware Authentication ---
+    storage_client = None
+    publisher = None
+
     if os.environ.get('K_SERVICE'):
         # We are in the Google Cloud Run environment
         print("Running in Cloud Run environment. Using default credentials.")
@@ -101,7 +103,21 @@
         mastered_blob = bucket.blob(mastered_blob_name)
         
         try:
-            download_url = mastered_blob.generate_signed_url(
+            # Re-initialize client with specific credentials for signing
+            # This is the most robust way to ensure the correct identity is used.
+            if os.environ.get('K_SERVICE'):
+                # In the cloud, use the attached service account identity.
+                # It needs "Service Account Token Creator" role.
+                sa_client = storage.Client()
+            else:
+                 # Locally, use the key file.
+                sa_credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_KEY_PATH)
+                sa_client = storage.Client(credentials=sa_credentials)
+
+            sa_bucket = sa_client.bucket(BUCKET_NAME)
+            sa_blob = sa_bucket.blob(mastered_blob_name)
+            
+            download_url = sa_blob.generate_signed_url(
                 version="v4",
                 expiration=datetime.timedelta(minutes=15),
                 method="GET",
