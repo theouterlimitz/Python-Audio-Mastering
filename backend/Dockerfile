@@ -1,5 +1,4 @@
-# Use the full Debian "Bullseye" version of the Python 3.11 image.
-# This is a more robust base that includes all necessary system libraries.
+# Use the full Debian base image for compatibility
 FROM python:3.11-bullseye
 
 # Install system dependencies required by pydub
@@ -8,15 +7,16 @@ RUN apt-get update && apt-get install -y ffmpeg
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy the requirements file into the container and install dependencies
+# Copy the requirements file into the container
 COPY requirements.txt .
+
+# Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application's code, ignoring the secret key
+# Copy the rest of the application's code
 COPY . .
 
-# Define environment variable for the port
-ENV PORT 8080
-
-# Run the application using Gunicorn when the container launches
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "app:app"]
+# --- FORENSIC STARTUP COMMAND ---
+# This is a temporary command to force the real startup error into the logs.
+# It will be replaced with the Gunicorn command once we find and fix the bug.
+CMD ["sh", "-c", "echo '--- FORENSIC STARTUP ---' && ls -lR /app && echo '--- PYTHON VERSION ---' && python --version && echo '--- ATTEMPTING TO RUN APP ---' && python app.py"]
