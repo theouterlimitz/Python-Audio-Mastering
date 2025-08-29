@@ -1,23 +1,58 @@
 # app.py
 #
 # A professional, production-grade backend API for the Audio Mastering Suite.
-# This version has been corrected for the syntax error in generate_signed_url.
+# This final version uses Google Secret Manager to securely load the service
+# account key with the private key needed for URL signing.
 #
 
 import os
 import datetime
 import json
-from flask import Flask, request, jsonify
-from google.cloud import storage, pubsub_v1
-from flask_cors import CORS
 import traceback
+from flask import Flask, request, jsonify
+from google.cloud import storage, pubsub_v1, secretmanager
+from google.oauth2 import service_account
+from flask_cors import CORS
 
 # --- Configuration ---
-BUCKET_NAME = "tactile-temple-395019-audio-uploads"
 PROJECT_ID = "tactile-temple-395019"
+BUCKET_NAME = "tactile-temple-395019-audio-uploads"
 TOPIC_ID = "mastering-jobs"
-# This is the dedicated identity for our backend service.
-BACKEND_SERVICE_ACCOUNT = "audio-backend-identity@tactile-temple-395019.iam.gserviceaccount.com"
+SECRET_ID = "backend-sa-key"
+SECRET_VERSION_ID = "latest"
+
+# --- Global Variables ---
+# We will load the credentials on startup. If this fails, the container
+# will crash, and the logs will show the error immediately.
+credentials = None
+
+def access_secret_version():
+    """Access the secret from Secret Manager and load credentials."""
+    try:
+        print("STEP 1: Initializing Secret Manager client...")
+        client = secretmanager.SecretManagerServiceClient()
+        name = f"projects/{PROJECT_ID}/secrets/{SECRET_ID}/versions/{SECRET_VERSION_ID}"
+        
+        print(f"STEP 2: Accessing secret: {name}")
+        response = client.access_secret_version(request={"name": name})
+        
+        print("STEP 3: Secret accessed. Decoding payload...")
+        secret_payload = response.payload.data.decode("UTF-8")
+        secret_json = json.loads(secret_payload)
+        
+        print("STEP 4: Creating credentials from secret JSON...")
+        creds = service_account.Credentials.from_service_account_info(secret_json)
+        
+        print("SUCCESS: Credentials loaded successfully from Secret Manager.")
+        return creds
+    except Exception as e:
+        print(f"CRITICAL STARTUP ERROR: Failed to load credentials from Secret Manager. {e}")
+        traceback.print_exc()
+        # Raise the exception to ensure the container crashes and we see the error.
+        raise
+
+# Load credentials on application startup.
+credentials = access_secret_version()
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -31,100 +66,80 @@ def hello():
 
 @app.route('/generate-upload-url', methods=['POST'])
 def generate_upload_url():
-    """
-    Generates a V4 signed URL, explicitly using the dedicated service account.
-    """
     try:
-        storage_client = storage.Client()
+        storage_client = storage.Client(credentials=credentials)
         bucket = storage_client.bucket(BUCKET_NAME)
 
         request_data = request.get_json()
-        if not request_data or 'filename' not in request_data or 'contentType' not in request_data:
-            return jsonify({"error": "Missing filename or contentType in request"}), 400
+        if not request_data or 'filename' not in request_data:
+             return jsonify({"error": "Missing filename in request"}), 400
 
         filename = request_data['filename']
-        content_type = request_data['contentType']
+        content_type = request_data.get('contentType', 'application/octet-stream')
         unique_filename = f"{os.urandom(8).hex()}_{filename}"
         blob = bucket.blob(unique_filename)
 
-        # SYNTAX CORRECTED HERE
         signed_url = blob.generate_signed_url(
             version="v4",
             expiration=datetime.timedelta(minutes=15),
             method="PUT",
             content_type=content_type,
-            service_account_email=BACKEND_SERVICE_ACCOUNT
+            credentials=credentials # Explicitly use the loaded credentials
         )
-
         return jsonify({"signedUrl": signed_url, "uniqueFilename": unique_filename}), 200
-
     except Exception as e:
-        print(f"CRITICAL ERROR in /generate-upload-url: {e}")
+        print(f"ERROR in /generate-upload-url: {e}")
         traceback.print_exc()
         return jsonify({"error": "Server failed to generate upload URL."}), 500
 
 @app.route('/start-processing', methods=['POST'])
 def start_processing():
-    """
-    Publishes a job to the Pub/Sub topic to trigger the worker.
-    """
     try:
-        publisher = pubsub_v1.PublisherClient()
+        publisher = pubsub_v1.PublisherClient(credentials=credentials)
         topic_path = publisher.topic_path(PROJECT_ID, TOPIC_ID)
 
         request_data = request.get_json()
         if not request_data or 'filename' not in request_data or 'settings' not in request_data:
             return jsonify({"error": "Missing filename or settings in request"}), 400
 
-        job_data = {
-            "filename": request_data['filename'],
-            "settings": request_data['settings']
-        }
-
+        job_data = { "filename": request_data['filename'], "settings": request_data['settings'] }
         message_data = json.dumps(job_data).encode("utf-8")
         future = publisher.publish(topic_path, message_data)
         future.result()
 
         return jsonify({"message": "Processing job started successfully."}), 200
-
     except Exception as e:
-        print(f"CRITICAL ERROR in /start-processing: {e}")
+        print(f"ERROR in /start-processing: {e}")
         traceback.print_exc()
         return jsonify({"error": "Server failed to start processing job."}), 500
 
 @app.route('/status', methods=['GET'])
 def get_status():
-    """
-    Checks if a processed file is ready and provides a download link.
-    """
     try:
         filename = request.args.get('filename')
         if not filename:
             return jsonify({"error": "Filename parameter is required"}), 400
 
-        storage_client = storage.Client()
+        storage_client = storage.Client(credentials=credentials)
         bucket = storage_client.bucket(BUCKET_NAME)
-        
         signal_blob = bucket.blob(f"processed/{filename}.complete")
         
         if signal_blob.exists():
             audio_blob = bucket.blob(f"processed/{filename}")
             if audio_blob.exists():
-                # SYNTAX CORRECTED HERE
                 download_url = audio_blob.generate_signed_url(
                     version="v4",
                     expiration=datetime.timedelta(minutes=60),
                     method="GET",
-                    service_account_email=BACKEND_SERVICE_ACCOUNT
+                    credentials=credentials # Explicitly use the loaded credentials
                 )
                 return jsonify({"status": "ready", "downloadUrl": download_url})
             else:
                  return jsonify({"status": "processing", "message": "Signal found but audio file is missing."})
         else:
             return jsonify({"status": "processing"})
-
     except Exception as e:
-        print(f"CRITICAL ERROR in /status: {e}")
+        print(f"ERROR in /status: {e}")
         traceback.print_exc()
         return jsonify({"error": "Server failed to get job status."}), 500
 
