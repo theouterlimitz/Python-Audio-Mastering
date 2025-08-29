@@ -1,7 +1,7 @@
 # app.py
 #
 # A professional, production-grade backend API for the Audio Mastering Suite.
-# This version uses "lazy initialization" for cloud clients to ensure a stable startup.
+# This version uses "lazy initialization" and explicit service account signing.
 #
 
 import os
@@ -10,16 +10,16 @@ import json
 from flask import Flask, request, jsonify
 from google.cloud import storage, pubsub_v1
 from flask_cors import CORS
+import traceback
 
 # --- Configuration ---
-# It's best practice to load configuration from environment variables.
 BUCKET_NAME = "tactile-temple-395019-audio-uploads"
 PROJECT_ID = "tactile-temple-395019"
 TOPIC_ID = "mastering-jobs"
+# This is the dedicated identity for our backend service.
+BACKEND_SERVICE_ACCOUNT = "audio-backend-identity@tactile-temple-395019.iam.gserviceaccount.com"
 
 app = Flask(__name__)
-# Allow all origins for simplicity. In a production app, you would restrict
-# this to your Netlify domain for enhanced security.
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # --- Routes ---
@@ -32,10 +32,9 @@ def hello():
 @app.route('/generate-upload-url', methods=['POST'])
 def generate_upload_url():
     """
-    Generates a V4 signed URL for a client to upload a file directly to GCS.
+    Generates a V4 signed URL, explicitly using the dedicated service account.
     """
     try:
-        # Lazy Initialization: Create the client only when needed.
         storage_client = storage.Client()
         bucket = storage_client.bucket(BUCKET_NAME)
 
@@ -48,29 +47,28 @@ def generate_upload_url():
         unique_filename = f"{os.urandom(8).hex()}_{filename}"
         blob = bucket.blob(unique_filename)
 
+        # THE FINAL FIX: Explicitly tell the function which service account to use for signing.
         signed_url = blob.generate_signed_url(
             version="v4",
             expiration=datetime.timedelta(minutes=15),
             method="PUT",
             content_type=content_type,
+            service_account_email=BACKEND_SERVICE_ACCOUNT
         )
 
         return jsonify({"signedUrl": signed_url, "uniqueFilename": unique_filename}), 200
 
     except Exception as e:
         print(f"CRITICAL ERROR in /generate-upload-url: {e}")
-        import traceback
         traceback.print_exc()
         return jsonify({"error": "Server failed to generate upload URL."}), 500
 
 @app.route('/start-processing', methods=['POST'])
 def start_processing():
     """
-    Receives the filename and settings from the client and publishes a job
-    to the Pub/Sub topic to trigger the worker.
+    Publishes a job to the Pub/Sub topic to trigger the worker.
     """
     try:
-        # Lazy Initialization: Create the client only when needed.
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(PROJECT_ID, TOPIC_ID)
 
@@ -91,22 +89,19 @@ def start_processing():
 
     except Exception as e:
         print(f"CRITICAL ERROR in /start-processing: {e}")
-        import traceback
         traceback.print_exc()
         return jsonify({"error": "Server failed to start processing job."}), 500
 
 @app.route('/status', methods=['GET'])
 def get_status():
     """
-    Checks if a processed file and its '.complete' signal file exist in GCS
-    and provides a download link if they do.
+    Checks if a processed file is ready and provides a download link.
     """
     try:
         filename = request.args.get('filename')
         if not filename:
             return jsonify({"error": "Filename parameter is required"}), 400
 
-        # Lazy Initialization: Create the client only when needed.
         storage_client = storage.Client()
         bucket = storage_client.bucket(BUCKET_NAME)
         
@@ -115,10 +110,12 @@ def get_status():
         if signal_blob.exists():
             audio_blob = bucket.blob(f"processed/{filename}")
             if audio_blob.exists():
+                # THE FINAL FIX: Explicitly tell the function which service account to use for signing.
                 download_url = audio_blob.generate_signed_url(
                     version="v4",
                     expiration=datetime.timedelta(minutes=60),
                     method="GET",
+                    service_account_email=BACKEND_SERVICE_ACCOUNT
                 )
                 return jsonify({"status": "ready", "downloadUrl": download_url})
             else:
@@ -128,7 +125,6 @@ def get_status():
 
     except Exception as e:
         print(f"CRITICAL ERROR in /status: {e}")
-        import traceback
         traceback.print_exc()
         return jsonify({"error": "Server failed to get job status."}), 500
 
