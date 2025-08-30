@@ -1,7 +1,8 @@
 pydub
 scipy
-numpy
-pyloudnorm
+numpypy
+loudnorm
 google-cloud-storage
 Flask==2.3.2
 gunicorn
+tqdm

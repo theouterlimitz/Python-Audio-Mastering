@@ -1,129 +1,138 @@
 # backend/app.py
 # Final version using lazy initialization for robustness in the cloud.
-# This version is designed to run on the official GAE base image.
+# This is the complete and correct code for the public-facing API server.
 
 import os
 import json
+import datetime
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 # These libraries will only be imported when needed inside a function.
-# This prevents startup crashes.
+# This prevents silent startup crashes and is a professional best practice.
 
 app = Flask(__name__)
-# Allow all origins for simplicity in this public API
+# This CORS configuration allows your Netlify frontend to communicate with this backend.
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# --- Constants ---
-# These are loaded from environment variables for flexibility,
-# but we have fallbacks for our specific project.
-PROJECT_ID = os.environ.get("GCP_PROJECT", "tactile-temple-395019")
-TOPIC_ID = "mastering-jobs"
-BUCKET_NAME = "tactile-temple-395019-audio-uploads"
-# The service account our backend is explicitly running as.
-SERVICE_ACCOUNT_EMAIL = f"audio-backend-identity@{PROJECT_ID}.iam.gserviceaccount.com"
+# --- Configuration ---
+# These are loaded from the environment when deployed in Google Cloud.
+GCP_PROJECT_ID = os.environ.get('GCP_PROJECT_ID', 'tactile-temple-395019')
+BUCKET_NAME = os.environ.get('GCS_BUCKET_NAME', 'tactile-temple-395019-audio-uploads')
+PUB_SUB_TOPIC = os.environ.get('PUB_SUB_TOPIC', 'mastering-jobs')
 
+# This is the dedicated service account for our backend, which has the necessary permissions.
+SERVICE_ACCOUNT_EMAIL = 'audio-mastering-app-sa@tactile-temple-395019.iam.gserviceaccount.com'
+
+def get_credentials():
+    """
+    Loads credentials. In a Cloud Run environment, credentials are automatically 
+    available from the attached service account. This is a secure best practice.
+    """
+    from google.auth import default
+    creds, _ = default()
+    return creds
 
 @app.route('/')
 def hello_world():
     """A simple health check endpoint to confirm the server is running."""
-    return 'Audio Mastering Backend is running.'
-
+    return "Audio Mastering Backend is running."
 
 @app.route('/generate-upload-url', methods=['POST'])
 def generate_upload_url():
-    """Generates a secure, short-lived URL for direct-to-cloud uploads."""
-    # Lazy import and initialization
+    """Generates a secure, short-lived URL for the client to upload a file directly to GCS."""
     from google.cloud import storage
 
     try:
         data = request.get_json()
         if not data or 'filename' not in data:
-            return jsonify({"error": "Missing filename"}), 400
+            return jsonify({"error": "Filename not provided"}), 400
 
-        filename = data['filename']
-        
-        storage_client = storage.Client()
+        # Initialize the client inside the function ("lazy initialization")
+        storage_client = storage.Client(credentials=get_credentials(), project=GCP_PROJECT_ID)
         bucket = storage_client.bucket(BUCKET_NAME)
-        blob = bucket.blob(filename)
+        blob = bucket.blob(data['filename'])
 
-        # Explicitly tell the signing function which identity to use. This is robust.
-        signed_url = blob.generate_signed_url(
+        # Generate a V4 signed URL, the modern and secure standard.
+        url = blob.generate_signed_url(
             version="v4",
-            expiration=300,  # 5 minutes
+            expiration=datetime.timedelta(minutes=15),
             method="PUT",
             content_type=data.get('contentType', 'application/octet-stream'),
             service_account_email=SERVICE_ACCOUNT_EMAIL,
+            access_token=None, # Let the library handle the token from credentials
         )
-        return jsonify({"signedUrl": signed_url, "filename": filename}), 200
-    except Exception as e:
-        print(f"ERROR in /generate-upload-url: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": "Failed to generate upload URL."}), 500
+        
+        gcs_uri = f"gs://{BUCKET_NAME}/{data['filename']}"
+        return jsonify({"url": url, "gcs_uri": gcs_uri}), 200
 
+    except Exception as e:
+        print(f"CRITICAL ERROR in /generate-upload-url: {e}")
+        return jsonify({"error": f"Internal server error: {e}"}), 500
 
 @app.route('/start-processing', methods=['POST'])
 def start_processing():
-    """Sends a job ticket to the Pub/Sub topic to trigger the worker."""
-    # Lazy import and initialization
+    """Receives confirmation of a successful upload and publishes a job to Pub/Sub."""
     from google.cloud import pubsub_v1
-
+    
     try:
         data = request.get_json()
-        if not data:
-            return jsonify({"error": "Missing job data"}), 400
+        if not data or 'gcs_uri' not in data or 'settings' not in data:
+            return jsonify({"error": "Missing GCS URI or settings"}), 400
 
-        publisher = pubsub_v1.PublisherClient()
-        topic_path = publisher.topic_path(PROJECT_ID, TOPIC_ID)
+        # Initialize the client inside the function
+        publisher = pubsub_v1.PublisherClient(credentials=get_credentials())
+        topic_path = publisher.topic_path(GCP_PROJECT_ID, PUB_SUB_TOPIC)
         
         message_data = json.dumps(data).encode("utf-8")
-        future = publisher.publish(topic_path, data=message_data)
-        future.result()  # Wait for the publish to complete.
-        return jsonify({"message": "Processing job has been successfully submitted."}), 200
+        
+        future = publisher.publish(topic_path, message_data)
+        future.result() # Wait for the message to be published.
+
+        original_filename = data['settings'].get('original_filename', 'unknown.wav')
+        processed_filename = f"processed/mastered_{original_filename}"
+        
+        return jsonify({"message": "Processing job started.", "processed_filename": processed_filename}), 200
+
     except Exception as e:
-        print(f"ERROR in /start-processing: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": "Failed to submit processing job."}), 500
-
-
+        print(f"CRITICAL ERROR in /start-processing: {e}")
+        return jsonify({"error": f"Internal server error: {e}"}), 500
+        
 @app.route('/status', methods=['GET'])
 def get_status():
-    """Checks for the processed file and provides a secure download link."""
-    # Lazy import and initialization
+    """Checks if a processed file exists and provides a secure download link."""
     from google.cloud import storage
-
-    try:
-        filename = request.args.get('filename')
-        if not filename:
-            return jsonify({"error": "Missing filename parameter"}), 400
-
-        processed_filename = f"processed/{filename}"
+    
+    filename = request.args.get('filename')
+    if not filename:
+        return jsonify({"error": "Filename parameter is required"}), 400
         
-        storage_client = storage.Client()
+    try:
+        storage_client = storage.Client(credentials=get_credentials(), project=GCP_PROJECT_ID)
         bucket = storage_client.bucket(BUCKET_NAME)
-        flag_blob = bucket.blob(f"{processed_filename}.complete")
+        
+        # Check for the ".complete" flag file first.
+        complete_flag_blob = bucket.blob(f"{filename}.complete")
+        if not complete_flag_blob.exists():
+            return jsonify({"status": "processing"}), 200
 
-        if flag_blob.exists():
-            audio_blob = bucket.blob(processed_filename)
-            # Explicitly tell the signing function which identity to use. This is robust.
-            download_url = audio_blob.generate_signed_url(
-                version="v4",
-                expiration=3600,  # 1 hour
-                method="GET",
-                service_account_email=SERVICE_ACCOUNT_EMAIL,
-            )
-            return jsonify({"status": "complete", "downloadUrl": download_url}), 200
-        else:
-            return jsonify({"status": "processing"}), 202
+        # If the flag exists, generate the download URL for the actual audio file.
+        audio_blob = bucket.blob(filename)
+        if not audio_blob.exists():
+             return jsonify({"status": "error", "message": "Processing complete but output file is missing."}), 404
+        
+        download_url = audio_blob.generate_signed_url(
+            version="v4",
+            expiration=datetime.timedelta(minutes=60), # Link is valid for 1 hour
+            method="GET",
+            service_account_email=SERVICE_ACCOUNT_EMAIL,
+            access_token=None, # Let the library handle the token
+        )
+        return jsonify({"status": "done", "download_url": download_url}), 200
+
     except Exception as e:
-        print(f"ERROR in /status: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": "Failed to get job status."}), 500
+        print(f"CRITICAL ERROR in /status check: {e}")
+        return jsonify({"status": "error", "message": f"Internal server error: {e}"}), 500
 
-
-if __name__ == "__main__":
-    # This part is for local testing only. Gunicorn runs the app in production.
+if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))

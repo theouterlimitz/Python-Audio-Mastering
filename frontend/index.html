@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio Mastering Suite</title>
+    <title>Python Audio Mastering Suite</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -16,281 +16,279 @@
             cursor: pointer;
             border-radius: 50%;
         }
-        .slider-thumb::-moz-range-thumb {
-            width: 16px;
-            height: 16px;
-            background: #4F46E5;
-            cursor: pointer;
-            border-radius: 50%;
-        }
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="bg-gray-900 text-gray-200 flex items-center justify-center min-h-screen">
-
     <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl w-full max-w-2xl border border-gray-700">
         <h1 class="text-3xl font-bold text-center mb-2 text-white">Audio Mastering Suite</h1>
-        <p class="text-center text-gray-400 mb-8">Upload your track and adjust the parameters to craft your sound.</p>
+        <p class="text-center text-gray-400 mb-8">Upload your track and apply professional mastering effects.</p>
 
-        <!-- Step 1: File Selection -->
-        <div class="mb-6 bg-gray-900/50 p-6 rounded-xl border border-gray-700">
-            <h2 class="text-xl font-semibold mb-4 text-white">1. Select File</h2>
-            <div class="flex items-center space-x-4">
-                <label for="file-input" class="flex-shrink-0 cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300">
-                    Choose File
-                </label>
-                <input type="file" id="file-input" class="hidden">
-                <span id="file-name" class="text-gray-400 truncate">No file selected</span>
+        <form id="uploadForm" class="space-y-6">
+            <!-- File Selection -->
+            <div class="bg-gray-900 p-4 rounded-lg border border-gray-700">
+                <h2 class="text-lg font-semibold mb-3 text-indigo-400">1. Select File</h2>
+                <div class="flex items-center space-x-4">
+                    <label for="fileInput" class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md transition-colors duration-300">
+                        Choose File
+                    </label>
+                    <input type="file" id="fileInput" class="hidden">
+                    <span id="fileName" class="text-gray-400 truncate">No file selected</span>
+                </div>
             </div>
-        </div>
-        
-        <!-- Step 2: Adjust Parameters -->
-        <div class="mb-6 bg-gray-900/50 p-6 rounded-xl border border-gray-700">
-            <h2 class="text-xl font-semibold mb-4 text-white">2. Adjust Parameters</h2>
-            <div id="controls-grid" class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                 <!-- Sliders will be dynamically added here -->
+            
+            <!-- Parameters -->
+            <div class="bg-gray-900 p-4 rounded-lg border border-gray-700">
+                 <h2 class="text-lg font-semibold mb-4 text-indigo-400">2. Adjust Parameters</h2>
+                 <!-- Parameter Sliders Grid -->
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                    <!-- Saturation -->
+                    <div>
+                        <label for="saturation" class="block text-sm font-medium text-gray-300">Saturation (%)</label>
+                        <div class="flex items-center space-x-3">
+                            <input type="range" min="0" max="100" value="10" step="1" id="saturation" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb">
+                            <span id="saturationValue" class="text-sm font-mono text-indigo-300 w-12 text-right">10 %</span>
+                        </div>
+                    </div>
+                    <!-- Bass -->
+                    <div>
+                        <label for="bass" class="block text-sm font-medium text-gray-300">Bass (dB)</label>
+                        <div class="flex items-center space-x-3">
+                            <input type="range" min="-6" max="6" value="0" step="0.5" id="bass" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb">
+                            <span id="bassValue" class="text-sm font-mono text-indigo-300 w-12 text-right">0.0 dB</span>
+                        </div>
+                    </div>
+                    <!-- Mid Cut -->
+                    <div>
+                        <label for="mid" class="block text-sm font-medium text-gray-300">Mid Cut (dB)</label>
+                         <div class="flex items-center space-x-3">
+                            <input type="range" min="0" max="6" value="0" step="0.5" id="mid" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb">
+                            <span id="midValue" class="text-sm font-mono text-indigo-300 w-12 text-right">0.0 dB</span>
+                        </div>
+                    </div>
+                     <!-- Presence -->
+                    <div>
+                        <label for="presence" class="block text-sm font-medium text-gray-300">Presence (dB)</label>
+                         <div class="flex items-center space-x-3">
+                            <input type="range" min="-6" max="6" value="0" step="0.5" id="presence" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb">
+                            <span id="presenceValue" class="text-sm font-mono text-indigo-300 w-12 text-right">0.0 dB</span>
+                        </div>
+                    </div>
+                     <!-- Treble -->
+                    <div>
+                        <label for="treble" class="block text-sm font-medium text-gray-300">Treble (dB)</label>
+                         <div class="flex items-center space-x-3">
+                            <input type="range" min="-6" max="6" value="0" step="0.5" id="treble" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb">
+                            <span id="trebleValue" class="text-sm font-mono text-indigo-300 w-12 text-right">0.0 dB</span>
+                        </div>
+                    </div>
+                     <!-- Stereo Width -->
+                    <div>
+                        <label for="width" class="block text-sm font-medium text-gray-300">Stereo Width</label>
+                         <div class="flex items-center space-x-3">
+                            <input type="range" min="0" max="2" value="1" step="0.05" id="width" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb">
+                            <span id="widthValue" class="text-sm font-mono text-indigo-300 w-12 text-right">1.00 x</span>
+                        </div>
+                    </div>
+                     <!-- Target LUFS -->
+                    <div class="md:col-span-2">
+                         <label for="lufs" class="block text-sm font-medium text-gray-300">Target LUFS</label>
+                         <div class="flex items-center space-x-3">
+                            <input type="range" min="-20" max="-6" value="-14" step="0.5" id="lufs" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb">
+                            <span id="lufsValue" class="text-sm font-mono text-indigo-300 w-12 text-right">-14.0 LUFS</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-             <div class="mt-4 flex items-center">
-                <input type="checkbox" id="use-multiband" class="h-4 w-4 rounded bg-gray-700 border-gray-600 text-indigo-600 focus:ring-indigo-500">
-                <label for="use-multiband" class="ml-2 text-sm font-medium text-gray-300">Use Multiband Compressor</label>
-            </div>
-            <div id="multiband-controls" class="hidden mt-4 space-y-4 border-t border-gray-700 pt-4">
-                 <!-- Multiband sliders will be dynamically added here -->
-            </div>
-        </div>
 
-        <!-- Step 3: Process -->
-        <button id="upload-button" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg text-lg transition-all duration-300 disabled:bg-gray-600 disabled:cursor-not-allowed">
-            Upload & Process
-        </button>
-
-        <!-- Status Area -->
-        <div id="status-area" class="mt-6 text-center text-gray-400 h-16 flex items-center justify-center">
-            <p id="status-text">Select a file to begin.</p>
-            <div id="download-area" class="hidden">
-                <a id="download-link" href="#" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg text-lg transition-colors duration-300">
-                    Download Mastered File
-                </a>
+            <!-- Multiband -->
+            <div class="bg-gray-900 p-4 rounded-lg border border-gray-700">
+                <div class="flex items-center">
+                    <input id="useMultiband" type="checkbox" class="h-4 w-4 rounded border-gray-600 text-indigo-600 focus:ring-indigo-500 bg-gray-800">
+                    <label for="useMultiband" class="ml-3 block text-sm font-medium text-gray-300">Use Multiband Compressor</label>
+                </div>
             </div>
-        </div>
+
+            <!-- Submit Button and Status -->
+            <div>
+                <button type="submit" id="submitButton" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-md text-lg transition-colors duration-300 flex items-center justify-center">
+                    Upload & Process
+                </button>
+                <div id="status" class="mt-4 text-center text-gray-400 h-6"></div>
+                <div id="downloadContainer" class="mt-4 text-center"></div>
+            </div>
+        </form>
     </div>
 
-<script>
-    // --- Configuration ---
-    const BACKEND_URL = "https://python-audio-backend-1015299845182.us-central1.run.app"; 
-    
-    // --- Element References ---
-    const fileInput = document.getElementById('file-input');
-    const fileNameSpan = document.getElementById('file-name');
-    const uploadButton = document.getElementById('upload-button');
-    const statusText = document.getElementById('status-text');
-    const downloadArea = document.getElementById('download-area');
-    const downloadLink = document.getElementById('download-link');
-    const useMultibandCheckbox = document.getElementById('use-multiband');
-    const multibandControlsDiv = document.getElementById('multiband-controls');
-    
-    let selectedFile = null;
-    let pollingInterval = null;
-
-    // --- Slider Definitions ---
-    const mainSliders = [
-        { id: 'saturation', label: 'Saturation (%)', min: 0, max: 100, step: 1, value: 10 },
-        { id: 'bass', label: 'Bass (dB)', min: -12, max: 12, step: 0.5, value: 0 },
-        { id: 'mid-cut', label: 'Mid Cut (dB)', min: -12, max: 12, step: 0.5, value: 0 },
-        { id: 'presence', label: 'Presence (dB)', min: -12, max: 12, step: 0.5, value: 0 },
-        { id: 'treble', label: 'Treble (dB)', min: -12, max: 12, step: 0.5, value: 0 },
-        { id: 'stereo-width', label: 'Stereo Width', min: 0, max: 2, step: 0.05, value: 1.0 },
-        { id: 'target-lufs', label: 'Target LUFS', min: -24, max: -6, step: 0.5, value: -14 }
-    ];
-
-    const multibandSliders = [
-        { id: 'low-thresh', label: 'Low Thresh (dB)', min: -60, max: 0, step: 1, value: -25 },
-        { id: 'low-ratio', label: 'Low Ratio', min: 1, max: 20, step: 0.1, value: 6.0 },
-        { id: 'mid-thresh', label: 'Mid Thresh (dB)', min: -60, max: 0, step: 1, value: -20 },
-        { id: 'mid-ratio', label: 'Mid Ratio', min: 1, max: 20, step: 0.1, value: 3.0 },
-        { id: 'high-thresh', label: 'High Thresh (dB)', min: -60, max: 0, step: 1, value: -15 },
-        { id: 'high-ratio', label: 'High Ratio', min: 1, max: 20, step: 0.1, value: 4.0 }
-    ];
-
-    // --- UI Initialization ---
-    function createSlider(container, { id, label, min, max, step, value }) {
-        const wrapper = document.createElement('div');
-        const labelEl = document.createElement('label');
-        labelEl.htmlFor = id;
-        labelEl.className = 'block text-sm font-medium text-gray-300 mb-1';
-        labelEl.textContent = label;
-
-        const valueSpan = document.createElement('span');
-        valueSpan.id = `${id}-value`;
-        valueSpan.className = 'float-right text-indigo-400 font-semibold';
-        valueSpan.textContent = value;
-
-        labelEl.appendChild(valueSpan);
-
-        const slider = document.createElement('input');
-        slider.type = 'range';
-        slider.id = id;
-        slider.min = min;
-        slider.max = max;
-        slider.step = step;
-        slider.value = value;
-        slider.className = 'w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb';
+    <script>
+        const form = document.getElementById('uploadForm');
+        const fileInput = document.getElementById('fileInput');
+        const fileNameDisplay = document.getElementById('fileName');
+        const statusDisplay = document.getElementById('status');
+        const downloadContainer = document.getElementById('downloadContainer');
+        const submitButton = document.getElementById('submitButton');
         
-        slider.addEventListener('input', () => {
-            valueSpan.textContent = slider.value;
+        // Backend URL - THIS MUST MATCH YOUR DEPLOYED BACKEND SERVICE
+        const API_BASE_URL = 'https://python-audio-backend-1015299845182.us-central1.run.app';
+
+        // Slider value displays
+        const sliders = [
+            { id: 'saturation', display: 'saturationValue', unit: ' %' },
+            { id: 'bass', display: 'bassValue', unit: ' dB' },
+            { id: 'mid', display: 'midValue', unit: ' dB' },
+            { id: 'presence', display: 'presenceValue', unit: ' dB' },
+            { id: 'treble', display: 'trebleValue', unit: ' dB' },
+            { id: 'width', display: 'widthValue', unit: ' x' },
+            { id: 'lufs', display: 'lufsValue', unit: ' LUFS' }
+        ];
+
+        sliders.forEach(slider => {
+            const input = document.getElementById(slider.id);
+            const display = document.getElementById(slider.display);
+            input.addEventListener('input', () => {
+                let value = parseFloat(input.value).toFixed(slider.id === 'width' ? 2 : 1);
+                 if (slider.id === 'saturation') value = parseInt(input.value);
+                display.textContent = `${value}${slider.unit}`;
+            });
         });
 
-        wrapper.appendChild(labelEl);
-        wrapper.appendChild(slider);
-        container.appendChild(wrapper);
-    }
-
-    createSlider(document.getElementById('controls-grid'), mainSliders[0]);
-    createSlider(document.getElementById('controls-grid'), mainSliders[1]);
-    createSlider(document.getElementById('controls-grid'), mainSliders[2]);
-    createSlider(document.getElementById('controls-grid'), mainSliders[3]);
-    createSlider(document.getElementById('controls-grid'), mainSliders[4]);
-    createSlider(document.getElementById('controls-grid'), mainSliders[5]);
-    createSlider(document.getElementById('controls-grid'), mainSliders[6]);
-    
-    multibandSliders.forEach(slider => createSlider(multibandControlsDiv, slider));
-
-    // --- Event Listeners ---
-    fileInput.addEventListener('change', (event) => {
-        selectedFile = event.target.files[0];
-        if (selectedFile) {
-            fileNameSpan.textContent = selectedFile.name;
-            statusText.textContent = "Ready to process.";
-        } else {
-            fileNameSpan.textContent = 'No file selected';
-        }
-    });
-
-    useMultibandCheckbox.addEventListener('change', () => {
-        multibandControlsDiv.classList.toggle('hidden');
-    });
-
-    uploadButton.addEventListener('click', handleUpload);
-
-    // --- Core Logic ---
-    async function handleUpload() {
-        if (!selectedFile) {
-            updateStatus('Please select a file first.', true);
-            return;
-        }
-
-        setUploadingState(true);
-        updateStatus('Step 1/4: Requesting secure upload link...');
-
-        try {
-            // STEP 1: Get the secure, signed URL from our backend
-            const getUrlResponse = await fetch(`${BACKEND_URL}/generate-upload-url`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    filename: selectedFile.name,
-                    contentType: selectedFile.type
-                })
-            });
-
-            if (!getUrlResponse.ok) throw new Error('Could not get upload URL from server.');
-            const { signedUrl, uniqueFilename } = await getUrlResponse.json();
-
-            // STEP 2: Upload the file directly to Google Cloud Storage
-            updateStatus('Step 2/4: Uploading file directly to cloud storage...');
-            const uploadResponse = await fetch(signedUrl, {
-                method: 'PUT',
-                headers: { 'Content-Type': selectedFile.type },
-                body: selectedFile
-            });
-
-            if (!uploadResponse.ok) throw new Error('Direct upload to cloud storage failed.');
-
-            // STEP 3: Tell the backend to start the mastering process
-            updateStatus('Step 3/4: Starting mastering process...');
-            const settings = getSliderSettings();
-            
-            // This endpoint is NEW and we will add it to the backend next.
-            const startProcessingResponse = await fetch(`${BACKEND_URL}/start-processing`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    filename: uniqueFilename,
-                    settings: settings
-                })
-            });
-
-            if (!startProcessingResponse.ok) throw new Error('Could not start the processing job.');
-
-            // STEP 4: Start polling for the result
-            updateStatus('Step 4/4: Processing in the cloud... Please wait.', false, true);
-            startPolling(uniqueFilename);
-
-        } catch (error) {
-            console.error('Upload process failed:', error);
-            updateStatus(`Error: ${error.message}`, true);
-            setUploadingState(false);
-        }
-    }
-
-    function getSliderSettings() {
-        const settings = {};
-        mainSliders.forEach(s => {
-            settings[s.id.replace('-', '_')] = parseFloat(document.getElementById(s.id).value);
+        fileInput.addEventListener('change', () => {
+            fileNameDisplay.textContent = fileInput.files[0] ? fileInput.files[0].name : 'No file selected';
         });
-        settings.multiband = useMultibandCheckbox.checked;
-        if (settings.multiband) {
-            multibandSliders.forEach(s => {
-                settings[s.id.replace('-', '_')] = parseFloat(document.getElementById(s.id).value);
-            });
-        }
-        return settings;
-    }
-
-    function startPolling(filename) {
-        if (pollingInterval) clearInterval(pollingInterval);
-
-        pollingInterval = setInterval(async () => {
-            try {
-                const response = await fetch(`${BACKEND_URL}/status?filename=${encodeURIComponent(filename)}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.status === 'ready' && data.downloadUrl) {
-                        clearInterval(pollingInterval);
-                        showDownloadLink(data.downloadUrl);
-                        setUploadingState(false);
-                    }
-                }
-            } catch (error) {
-                console.error('Polling error:', error);
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const file = fileInput.files[0];
+            if (!file) {
+                showStatus('Error: Please select a file.', true);
+                return;
             }
-        }, 10000); // Poll every 10 seconds
-    }
-    
-    // --- UI State Helpers ---
-    function updateStatus(message, isError = false, isProcessing = false) {
-        statusText.textContent = message;
-        statusText.className = isError ? 'text-red-400' : 'text-gray-400';
-        if (isProcessing) {
-            statusText.innerHTML += '<span class="ml-2 animate-pulse">. . .</span>';
+
+            setProcessingState(true, 'Getting ready...');
+            downloadContainer.innerHTML = ''; // Clear previous download link
+
+            const settings = {
+                bass_boost: parseFloat(document.getElementById('bass').value),
+                mid_cut: parseFloat(document.getElementById('mid').value),
+                presence_boost: parseFloat(document.getElementById('presence').value),
+                treble_boost: parseFloat(document.getElementById('treble').value),
+                width: parseFloat(document.getElementById('width').value),
+                lufs: parseFloat(document.getElementById('lufs').value),
+                saturation: parseInt(document.getElementById('saturation').value),
+                multiband: document.getElementById('useMultiband').checked,
+                original_filename: file.name
+            };
+
+            // ---- NEW TWO-STEP UPLOAD PROCESS ----
+            try {
+                // STEP 1: Get the secure upload URL from our backend
+                showStatus('Requesting upload permission...');
+                const presignedResponse = await fetch(`${API_BASE_URL}/generate-upload-url`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename: file.name, contentType: file.type })
+                });
+
+                if (!presignedResponse.ok) {
+                    const errorData = await presignedResponse.json().catch(() => ({error: 'Server returned an invalid response.'}));
+                    throw new Error(errorData.error || 'Could not get upload URL from server.');
+                }
+                
+                const { url, gcs_uri } = await presignedResponse.json();
+
+                // STEP 2: Upload the file DIRECTLY to Google Cloud Storage
+                showStatus('Uploading file...');
+                const uploadResponse = await fetch(url, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': file.type },
+                    body: file
+                });
+                
+                if (!uploadResponse.ok) throw new Error('Failed to upload file to cloud storage.');
+
+                // STEP 3: Tell our backend to start the processing job
+                showStatus('Starting processing job...');
+                const startResponse = await fetch(`${API_BASE_URL}/start-processing`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ gcs_uri: gcs_uri, settings: settings })
+                });
+                
+                if (!startResponse.ok) throw new Error('Could not start processing job.');
+
+                const { processed_filename } = await startResponse.json();
+                
+                // STEP 4: Start polling for the result
+                pollForStatus(processed_filename);
+
+            } catch (error) {
+                console.error('Upload process failed:', error);
+                showStatus(`Error: ${error.message}`, true);
+                setProcessingState(false);
+            }
+        });
+
+        function pollForStatus(filename) {
+            showStatus('Processing in the cloud... (this may take several minutes)');
+            const interval = setInterval(async () => {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/status?filename=${encodeURIComponent(filename)}`);
+                    const data = await response.json();
+
+                    if (data.status === 'done' && data.download_url) {
+                        clearInterval(interval);
+                        showStatus('Processing complete!', false);
+                        setProcessingState(false);
+                        showDownloadButton(data.download_url);
+                    } else if (data.status === 'error') {
+                        clearInterval(interval);
+                        showStatus(`Error: ${data.message}`, true);
+                         setProcessingState(false);
+                    }
+                    // If status is 'processing', just continue polling...
+                } catch (error) {
+                    clearInterval(interval);
+                    showStatus('Error: Could not check status.', true);
+                     setProcessingState(false);
+                }
+            }, 10000); // Check every 10 seconds
         }
-    }
 
-    function setUploadingState(isUploading) {
-        uploadButton.disabled = isUploading;
-        uploadButton.textContent = isUploading ? 'Processing...' : 'Upload & Process';
-        statusText.classList.remove('hidden');
-        downloadArea.classList.add('hidden');
-    }
+        function showStatus(message, isError = false) {
+            statusDisplay.textContent = message;
+            statusDisplay.style.color = isError ? '#F87171' : '#A5B4FC';
+        }
 
-    function showDownloadLink(url) {
-        statusText.classList.add('hidden');
-        downloadArea.classList.remove('hidden');
-        downloadLink.href = url;
-    }
+        function setProcessingState(isProcessing, message = "Upload & Process") {
+            submitButton.disabled = isProcessing;
+            if (isProcessing) {
+                submitButton.innerHTML = `
+                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    ${message}`;
+                submitButton.classList.remove('bg-green-600', 'hover:bg-green-700');
+                submitButton.classList.add('bg-gray-600', 'cursor-not-allowed');
+            } else {
+                submitButton.textContent = message;
+                submitButton.classList.add('bg-green-600', 'hover:bg-green-700');
+                submitButton.classList.remove('bg-gray-600', 'cursor-not-allowed');
+            }
+        }
+        
+        function showDownloadButton(url) {
+            downloadContainer.innerHTML = `
+                <a href="${url}"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   class="w-full inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-md text-lg transition-colors duration-300">
+                    Download Mastered File
+                </a>`;
+        }
 
-</script>
+    </script>
 </body>
 </html>
