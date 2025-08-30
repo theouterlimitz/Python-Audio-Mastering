@@ -84,4 +84,4 @@ The workflow is simple and is broken into sections in the app.
 2.  **Apply a Preset (Optional):** Choose a genre from the dropdown menu to instantly load a set of EQ parameters.
 3.  **Adjust Parameters:** Use the sliders to fine-tune the Saturation, EQ, stereo width, and final target loudness (LUFS).
 4.  **Use Multiband Compressor:** Check this box to reveal and engage the advanced compressor. Adjust the threshold and ratio for each band as needed.
-5.  **Start Processing:** Click the "Start Processing" button. The status bar at the bottom will show the progress, and a message will appear when the process is complete.
+5.  **Start Processing:** Click the "Start Processing" button. The status bar at the bottom will show the progress, and a message will appear when the process is complete.  Work in progress.
